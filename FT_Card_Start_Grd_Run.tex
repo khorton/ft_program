@@ -1,0 +1,163 @@
+% =============================================================================#
+% created by Kevin Horton, 2011
+% 
+% This file is part of ft_program.
+% 
+%     ft_program is free software: The exectuable files are licensed under the
+%     Gnu Public License, but the latex files, including this file, are placed 
+%     in the public domain.  
+%
+% =============================================================================#
+
+% NOTES
+% need to use \noindent at the start of each new para to avoid an indent.
+% Has several placeholders, to be searched and replaced by a perl script:
+% <<<Flt_No>>>
+% <<<Date>>>
+%<<<Pilot>>>
+%<<<FTE>>>
+%<<<Purpose>>>
+
+
+%\documentclass[letterpaper,10pt,halfparskip]{scrartcl}
+\documentclass[10pt,halfparskip]{scrartcl}
+%\documentclass{article}
+%\documentclass[letterpaper,10pt]{article}
+%\documentclass[letterpaper,17pt]{memoir}
+\usepackage[OT1]{fontenc}
+\usepackage[latin1]{inputenc}
+\usepackage{boxedminipage}
+\usepackage{calc} % used by the geometry package to do calculations
+\usepackage{color}
+\usepackage{extsizes} % for extra font sizes
+\usepackage{geometry}
+%  \geometry{verbose,letterpaper,tmargin=0.25 in,left=1 in,right=0.25 in,bmargin=0.75 in}
+  \geometry{verbose,paperwidth=5.5 in,paperheight=8.5in,hoffset=-0.25 in,tmargin=0.25 in,left=1 in,right=0 in,bmargin=0.5 in,footskip=20 pt}
+\usepackage{graphicx}
+\usepackage{layouts}
+\usepackage{multirow}
+\usepackage{paralist} % to get compact list environments
+\usepackage{ragged2e} % to get the justifying option to make NOTES
+\usepackage{tabularx}
+\usepackage{textcomp} % for to get degree symbols from \textdegree
+%\usepackage[cross,letter]{crop}
+
+% following lengths are used to set row widths to fit the text
+\newlength{\colOne}
+\newlength{\colTwo}
+\newlength{\colThree}
+\newlength{\colFour}
+\newlength{\colFive}
+\newlength{\colSix}
+\newlength{\colSeven}
+\newlength{\colEight}
+
+% Define Test Point environment
+% Concept from TLC2 page 849.
+\newcounter{TP} \newsavebox{\TestPointName}
+\newenvironment{TestPoint}[1]
+   {\stepcounter{TP}
+    \noindent\begin{minipage}{\linewidth}
+      \Large{\textsf{\textbf{\arabic{TP}. #1}}}\hfill\normalfont\normalsize \begin{boxedminipage}{0.75 in}\textcolor{white}{g}\end{boxedminipage}
+%      \Large{\textsf{\textbf{\arabic{TP}. #1}}}\hfill\normalfont\normalsize Start \begin{boxedminipage}{0.75 in}\textcolor{white}{g}\end{boxedminipage}
+      \vspace{0.15 in}\par}
+   {\par\hfill Complete \begin{boxedminipage}{0.75 in}\textcolor{white}{g}\end{boxedminipage}
+   \noindent\rule{\linewidth}{1mm}\vspace{0.15 in}
+    \end{minipage}}
+
+%% New environment for NOTES, CAUTIONS and WARNINGS
+\newcounter{oldparindent}
+\newenvironment{Note}[1][NOTE]
+  {
+    \setcounter{oldparindent}{\parindent} 
+    \begin{quote}
+    \centering{\textbf{#1}}
+    \\ 
+    \justifying  
+    \parindent=0pt
+  }
+  {
+    \parindent \value{oldparindent}pt
+    \end{quote}
+  }
+
+%% New environment for NOTES, CAUTIONS and WARNINGS in checklists
+%% Same as normal notes, but no indent.
+\newenvironment{Note2}[1][NOTE]
+  {
+    \setcounter{oldparindent}{\parindent} 
+    \centering{\textbf{#1}}
+    \\ 
+    \justifying  
+    \parindent=0pt
+  }
+  {
+    \parindent \value{oldparindent}pt
+  }
+
+
+\begin{document}
+
+%% Following three lines show a minipage diagram, with margins shown.  Seems to need layouts package.
+%\currentpage
+%\setlayoutscale{0.5}
+%\pagedesign
+
+%\noindent\begin{tabularx}{\linewidth - 10 pt}{llXrlXrl}
+\noindent\begin{tabularx}{\linewidth - 10 pt}{llXrlXrl}
+  RV-8&C-GNHK&&Grd Run \#:&<<<flt_no>>>&&Date:&<<<date>>>
+  \end{tabularx}
+  
+\noindent\begin{tabularx}{\linewidth - 10 pt}{llX|l|c|c|}
+  \cline{4-6}
+  &&&&Time&Fuel\\
+  &&&&&(l)\\
+  \cline{4-6}
+  &&&Start&&\\
+  \cline{4-6}
+  &&&Taxi&&\\
+  \cline{4-6}
+  Pilot:&<<<pilot>>>&&Stop&&\\
+  \cline{4-6}
+  FTE:&<<<fte>>>&&Shut Down&&\\
+  \cline{4-6}
+  \end{tabularx}
+
+%PURPOSE
+\noindent\rule{\linewidth}{1mm}\vspace{0.2 in}
+  \section*{PURPOSE}
+    <<<purpose>>>
+  
+% WEATHER
+\noindent\rule{\linewidth}{1mm}\vspace{0.2 in}
+\section*{WEATHER}
+% set widths for table
+\settowidth\colOne{LAND}
+\settowidth\colTwo{ATIS}
+\settowidth\colThree{Wind}
+\settowidth\colFour{Vis}
+\settowidth\colSix{Temp}
+\settowidth\colSeven{Alt.}
+\noindent\begin{tabularx}{\linewidth - 10 pt}{|p{\colOne}|p{\colTwo}|p{\colThree}|p{\colFour}|X|p{\colSix}|p{\colSeven}|}
+  \hline
+  &ATIS&Wind&Vis&Weather&Temp.&Alt.\\
+  \hline
+  \hline
+  START&&&&&&\\
+  \hline
+  STOP&&&&&&\\
+  \hline
+  \end{tabularx}
+  
+%LIMITATIONS
+\noindent\rule{\linewidth}{1mm}\vspace{0.2 in}
+\noindent\begin{minipage}{\linewidth}
+\section*{LIMITATIONS}
+<<<limitations>>>
+\end{minipage}
+
+\clearpage
+\begin{TestPoint}{START GROUND TEST}
+  \textbf{** START DATA RECORDING **}
+  \end{TestPoint}
+

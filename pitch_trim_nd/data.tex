@@ -1,0 +1,46 @@
+% =============================================================================#
+% created by Kevin Horton, 2011
+% 
+% This file is part of ft_program.
+% 
+%     ft_program is free software: The exectuable files are licensed under the
+%     Gnu Public License, but the latex files, including this file, are placed 
+%     in the public domain.  
+%
+% =============================================================================#
+\Large
+\subsubsection*{Results}
+%  \settowidth{\colOne}{Power}
+%  \settowidth{\colTwo}{Altitude}
+  \settowidth{\colOne}{(USG)}
+  \settowidth{\colTwo}{Power}
+  \settowidth{\colThree}{Altitude}
+%  \settowidth{\colThree}{Range}
+  \settowidth{\colFive}{Remarks}
+
+  \begin{tabularx}{\textwidth}{|c|c|c|c|lX|}
+    \hline
+%\multirow{3}{\colOne}{Power}&\multirow{3}{\colTwo}{\centering {Altitude (ft)}}&Max Trim&\multirow{3}{\colFive}{\centering Remarks}&\\
+%&&Speed&&\\
+%&&(kt)&&\\
+\multirow{3}{\colOne}{\centering {Fuel (USG)}}&\multirow{3}{\colTwo}{Power}&\multirow{3}{\colThree}{\centering {Altitude (ft)}}&Max Trim&\multirow{3}{\colFive}{\centering Remarks}&\\
+&&&Speed&&\\
+&&&(kt)&&\\
+    \hline
+    \hline
+    &&&&&\\
+    \hline
+    &&&&&\\
+    \hline
+    &&&&&\\
+    \hline
+    &&&&&\\
+    \hline
+    &&&&&\\
+    \hline
+    &&&&&\\
+    \hline
+    \end{tabularx}     
+    \normalsize
+
+   \include{Observations}
