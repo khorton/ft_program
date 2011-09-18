@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 #
-# Script to pull airccraft flight test points from MySQL database, write a LaTeX
+# Script to pull aircraft flight test points from MySQL database, write a LaTeX
 # file which is then used to create a pdf flight test card.
 #
 #=============================================================================#
@@ -21,7 +21,11 @@
 #     You should have received a copy of the GNU General Public License
 #     along with ft_program.  If not, see <http://www.gnu.org/licenses/>.
 #=============================================================================#
+# Version History
+# v1.0      2011-09-17 Initial public release
 #
+#
+#=============================================================================#
 #
 # Printing - Use A4 paper.  Select A4 paper in the FT_Card_Start.tex file 
 #            (geometry package options).  Make sure that Page Setup in Preview 
@@ -55,15 +59,13 @@
 #         5. Add new table that holds list of test points and sequence to be 
 #            flown on each flight, to facilitate flying each test point 
 #            multiple times.
+#
+#         6. Allow test programs for multiple aircraft in one mysql file.
 
 # Done:   5. 20090227 - reworked to add new table that holds list of test 
 #            points and sequence to be flown on each flight, to facilitate 
 #            flying each test point multiple times.
-#
-#        6. 20110307 - added capacity for multiple aircraft to share same 
-#           test point data base.  New aircraft table contains details of
-#           all aircraft.  aircraft field in all other tables, except the
-#           test_program table, ties each record to a specific aircraft.
+
 
 
 use strict;
@@ -77,14 +79,11 @@ use Date::Calc qw(:all);
 # $opt_p = repeat procedure, even if it is the same as the previous test
 # $opt_q = quiet - do not open the pdf file after creating it
 
-our ($opt_f, $opt_h, $opt_o, $opt_p, $opt_q, $opt_d, $opt_a);
-#my $test_card_home = "/Users/kwh/sw_projects/hg/ft_program";
-my $home = $ENV{ HOME };
-my $test_card_home = "/$home/hg/ft_program";
+our ($opt_f, $opt_h, $opt_o, $opt_p, $opt_q, $opt_d, $opt_w);
+my $test_card_home = "/Users/kwh/sw_projects/hg/ft_program";
+#my $test_card_home = "/home/user/hg/ft_program";
 
-# my $test_card_file_start = "/$test_card_home/FT_Card_Start_GOGO.tex";
 my $test_card_file_start = "/$test_card_home/FT_Card_Start.tex";
-# my $test_card_file_start_grd_run = "/$test_card_home/FT_Card_Start_Grd_Run_GOGO.tex";
 my $test_card_file_start_grd_run = "/$test_card_home/FT_Card_Start_Grd_Run.tex";
 my $test_card_file_end = "$test_card_home/FT_Card_End.tex";
 my $test_point_end = "/$test_card_home/tpend.tex";
@@ -148,10 +147,10 @@ my @purpose = "";
 my @temp_purpose = "";
 # my @Compact_Enum_input = "";
 # my @temp_Compact_enum = "";
-getopts("hopqf:d:a:",\%options); 
+getopts("hopqwf:d:",\%options); 
 $flt_no = $options{f};
 $opt_o = $options{o};
-my $aircraft = $options{a};
+$opt_w = $options{w};
 
 
 if(defined $options{d}){
@@ -168,13 +167,6 @@ if(defined $options{d}){
     }
 }
 
-if(defined $options{a}){
-    $aircraft = $options{a};    
-} else {
-    $aircraft = 'C-GNHK';
-}
-print "aircraft is $aircraft\n";
-
 my $usage = "Flight or Ground Run number not defined (Ground Run numbers start with a G)\n
 useage: test_card.pl -f n
 
@@ -182,10 +174,9 @@ n is the flight number to create the test card for.
 
 Optional switches: -o override weight and cg errors
                    -d date - flight date.  Date must be in format YYYY-MM-DD, or it must be 'today'
-                   -h history - create test card for flight that has already occured
                    -p procedure - repeat procedure even if next test point is the same type
-                   -q quiet - do not open the pdf file after creating it
-                   -a aircaft - specify aircraft registration.  Default is 'C-GNHK'\n";
+                   -q quiet - do not open the pdf file after creating it\n
+                   -w W&B - calculate weight and CG and exit";
 
 
 if (!defined $options{f}) {
@@ -227,12 +218,9 @@ my $dbh = DBI->connect("DBI:mysql:database=ft_program;host=localhost",
 
 # Pull info from flight table.
 if (substr($flt_no, 0, 1) == "G") {
-    $sth = $dbh->prepare("SELECT * FROM flights JOIN aircraft WHERE flights.flt =  \"$flt_no\" AND aircraft.registration = \'$aircraft\' AND aircraft.id = flights.aircraft"); 
-    
+    $sth = $dbh->prepare("SELECT * FROM flights WHERE flt = \"$flt_no\"");
 } else { 
-    $sth = $dbh->prepare("SELECT * FROM flights JOIN aircraft WHERE flights.flt = $flt_no AND aircraft.registration = \'$aircraft\' AND aircraft.id = flights.aircraft"); 
-     
-
+    $sth = $dbh->prepare("SELECT * FROM flights WHERE flt = $flt_no"); 
 }
 $sth->execute();
 
@@ -252,9 +240,7 @@ while (my $ref = $sth->fetchrow_hashref()) {
               ballast1_wt => $ref->{'ballast1_wt'},
              ballast1_arm => $ref->{'ballast1_arm'},
               ballast2_wt => $ref->{'ballast2_wt'},
-             ballast2_arm => $ref->{'ballast2_arm'},
-                 aircraft => $ref->{'registration'},
-                     type => $ref->{'type'}
+             ballast2_arm => $ref->{'ballast2_arm'}
     );
 }
 $sth->finish();
@@ -263,53 +249,31 @@ if ($manual_date){$data{date} = $manual_date}
 
 $data{'purpose'} = Compact_Enum($data{'purpose'});
 
-# Set MTOW based on flt date
-print "Date is $data{date}\n";
-if ($data{date} gt "2010-04-20\n"){
-    # print "Gross weight = 1900 lb\n";
-    $TOW_max = "1900";
-    $gnuplot_wb_file_template = "$test_card_home/wb/wb_chart_test_card_template_1900.gp";
-}
-#} else {print "Gross weight = 1800 lb"}
-#print "Max weight = $TOW_max";
-#print "WB file = $gnuplot_wb_file";
 ###############################################################################
 # Pull info from limitations table.
 if (substr($flt_no, 0, 1) == "G") {
-    $sth = $dbh->prepare("SELECT * FROM limitations JOIN aircraft ON (limitations.aircraft=aircraft.id AND aircraft.registration=\'$aircraft\') WHERE flt like \"$flt_no\"");
+    $sth = $dbh->prepare("SELECT * FROM limitations WHERE flt like \"$flt_no\"");
 } else {
-    $sth = $dbh->prepare("SELECT * FROM limitations JOIN aircraft ON (limitations.aircraft=aircraft.id AND aircraft.registration=\'$aircraft\') WHERE flt = $flt_no"); 
+    $sth = $dbh->prepare("SELECT * FROM limitations WHERE flt = $flt_no"); 
 }
 
 $sth->execute();
 while (my $ref = $sth->fetchrow_hashref()) {
-  $data{limitations} = $ref->{'latex'};
-  # print $data{limitations};
-  $data{limitations} = Compact_Enum($data{limitations});
+  #$data{limitations} = $ref->{'latex'};
+  # if ($ref->{'latex'} != "") {
+  #   $data{limitations} = Compact_Enum($ref->{'latex'});
+  # } else {
+  #   $data{limitations} = "";
+  # }
+  if ($ref->{'latex'} == "") {
+    $data{limitations} = "None"
+  } else {
+    $data{limitations} = Compact_Enum($ref->{'latex'});
+  }
 }
 $sth->finish();
 
 
-###############################################################################
-# use different templates for start of test card, depending on whether we have
-# a flight or a ground run (ground runs have negative flight numbers)
-# if ($flt_no < 1) {
-if (substr($flt_no, 0, 1) == "G") {
-    $opt_o = 1;
-  open (INPUT , '<' , "$test_card_file_start_grd_run")
-    or die "Can't open $!";
-    print "Ground test\n";
-} else {
-  open (INPUT , '<' , "$test_card_file_start")
-    or die "Can't open $!";
-}
-
-@working_data = readline INPUT;
-
-$OUTPUT_FILE = "$test_card_home/Test_card_flt_$flt_no";
-
-open (OUTPUT , '>' , "$OUTPUT_FILE.tex")
-  or die "Can't open test card file: $!";
 
 ###############################################################################
 #
@@ -320,7 +284,7 @@ open (OUTPUT , '>' , "$OUTPUT_FILE.tex")
 # Pull all weighing data from wb database
 
 if ($flt_no >= 1) {
-  my $sth = $dbh->prepare("SELECT * FROM wb JOIN aircraft ON (wb.aircraft=aircraft.id AND aircraft.registration=\'$aircraft\') ORDER BY date desc"); 
+  my $sth = $dbh->prepare("SELECT * FROM wb ORDER BY date desc"); 
   $sth->execute();
   
   # select correct weighing data
@@ -374,6 +338,14 @@ if ($flt_no >= 1) {
   # add fuel weight and moment to get take-off weight and CG
   $TOW = $ZFW + $data{fuel_wt};
   $TOW_CG = ($ZFW_moment + $data{fuel_wt} * $fuel_arm) / $TOW;
+  
+  if ($opt_w) {
+      my $percent_CG_norm = ($TOW_CG - $fwd_cg_limit)/($aft_cg_limit - $fwd_cg_limit ) * 100;
+      # print qq(The zero fuel weight and CG are: $ZFW lb at $ZFW_CG inches\n);
+      printf "The zero fuel weight is %.0f lb.\n", $ZFW;
+      printf "The take-off weight and CG are: %.0f lb at %.1f\",  %.1f\% aft of the forward limit.\n", $TOW, $TOW_CG, $percent_CG_norm ;
+      exit;
+  }
   
   open (WB_DATA , '>' , "$wb_chart_data_file_name")
     or die "Can't open weight and balance data file: $!";
@@ -458,15 +430,10 @@ if ($flt_no >= 1) {
   open (GNUPLOT , '>' , "$gnuplot_wb_file")
     or die "Can't open test card file: $!";
   
-  print GNUPLOT "### THIS FILE IS AUTOMATICALLY GENERATED FROM $gnuplot_wb_file_template ###\n";
-  print GNUPLOT "### DO NOT WASTE YOUR TIME EDITING THIS FILE ###\n\n";
   print GNUPLOT "$gnuplot_file\n";
   
   system "gnuplot $gnuplot_wb_file";
   system "epstopdf --outfile $test_card_home/wb/wb_chart.pdf $test_card_home/wb/wb_chart.eps";
-} else {
-  # format date for ground run
-  $data{date} = FormatDate($data{date});
 }
 ###############################################################################
 
@@ -483,10 +450,13 @@ print OUTPUT "@working_data\n";
 
 # Pull test points from the test_program table.
 if (substr($flt_no, 0, 1) == "G") {
-  $query = "SELECT test_program.id, flt_tp_list.flt, test, flt_tp_list.sequence, speed, altitude, power, flaps, remarks, wt, cg, latex, status, risk, tp FROM test_program JOIN (flt_tp_list, aircraft) ON (test_program.id=flt_tp_list.tp_id AND flt_tp_list.aircraft=aircraft.id AND aircraft.registration=$aircraft AND flt_tp_list.flt = \"$flt_no\" ORDER BY flt_tp_list.sequence";
+  # $query = "SELECT * FROM test_program WHERE flt = \"$flt_no\" ORDER BY sequence";
+  $query = "SELECT test_program.id, flt_tp_list.flt, test, flt_tp_list.sequence, speed, altitude, power, flaps, remarks, wt, cg, latex, status, risk, tp FROM flt_tp_list INNER JOIN test_program ON test_program.id = flt_tp_list.tp_id WHERE flt_tp_list.flt = \"$flt_no\" ORDER BY sequence";
 } else {
-  $query = "SELECT test_program.id, flt_tp_list.flt, test, flt_tp_list.sequence, speed, altitude, power, flaps, remarks, wt, cg, latex, status, risk, tp FROM test_program JOIN (flt_tp_list, aircraft) ON (test_program.id=flt_tp_list.tp_id AND flt_tp_list.aircraft=aircraft.id AND aircraft.registration=\'$aircraft\' AND flt_tp_list.flt = $flt_no) ORDER BY flt_tp_list.sequence";}
-  print "$query\n";
+  # $query = "SELECT * FROM test_program WHERE flt = $flt_no ORDER BY sequence";
+  $query = "SELECT test_program.id, flt_tp_list.flt, test, flt_tp_list.sequence, speed, altitude, power, flaps, remarks, wt, cg, latex, status, risk, tp FROM flt_tp_list INNER JOIN test_program ON test_program.id = flt_tp_list.tp_id WHERE flt_tp_list.flt = $flt_no ORDER BY sequence";
+}
+
 my $sth = $dbh->prepare("$query"); 
 $sth->execute();
 while (my $ref = $sth->fetchrow_hashref()) {
@@ -599,8 +569,7 @@ $tpdata{power} =~ s/^(\d+)%/$1\\%/g;
     # add remarks from database to put in Procedure part
     $ref->{'latex'} = $ref->{'latex'} . "\n" . "\\subsubsection*{Procedure}\n"; 
     # put any subscripts to V in correct format
-    # $ref->{'remarks'} =~ s/V(\w{1,4}\s)/\$\\mathrm{V_{$1}}\$/g;
-    $ref->{'remarks'} =~ s/(\d+.*\d+\s*)V(\w{1,4})/\$\\mathrm{$1V_{$2}}\$/g;
+    $ref->{'remarks'} =~ s/V(\w{1,4}\s)/\$\\mathrm{V_{$1}}\$/g;
     
     # fix any "%" so they are not seen as latex comments
     $ref->{'remarks'} =~ s/^(\d+)%/$1\\%/g;
@@ -663,16 +632,12 @@ run "test_card.pl -f $flt_no -o" to override the weight and CG errors.\n);
 # 2 pages per sheet option
 system "latex -output-directory $test_card_home $OUTPUT_FILE";
 system "dvips -t a4 -o $OUTPUT_FILE.ps $OUTPUT_FILE.dvi";
-#system "psnup -pa4 -2 -q $OUTPUT_FILE.ps $OUTPUT_FILE-2.ps";
+system "psnup -pa4 -2 -q $OUTPUT_FILE.ps $OUTPUT_FILE-2.ps";
 system "ps2pdf13 -sPAPERSIZE=a4 $OUTPUT_FILE.ps $OUTPUT_FILE.pdf";
 
 unless ($opt_q) {
     # exec "xpdf -z page $OUTPUT_FILE.pdf";
-    if (-e '/usr/bin/evince'){
-        system "evince $OUTPUT_FILE.pdf";
-    } else {
-        system "open $OUTPUT_FILE.pdf";
-    }
+    system "open $OUTPUT_FILE.pdf";
     # sleep(5);
     # run Applescript to change paper to A4 and scaling to 100%
     # exec "open /Users/kwh/ft_program/Preview_to_A4.app";
@@ -848,9 +813,6 @@ sub Compact_Enum
     my @temp_output = "";
     my $Output = "";
 
-    print "Compact Enum input is:\n";
-    print $Compact_Enum_input;
-    print "\n\n";
     # split input into lines, and change to compactenum for latex
     @temp_Compact_enum = split(/\n/, $Compact_Enum_input);
     $temp_output[0]="\\begin{compactenum}";
