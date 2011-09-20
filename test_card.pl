@@ -23,6 +23,7 @@
 #=============================================================================#
 # Version History
 # v1.0      2011-09-17 Initial public release
+# v1.0.1    2011-09-19 Move database info to variables vice hardcoded
 #
 #
 #=============================================================================#
@@ -80,8 +81,11 @@ use Date::Calc qw(:all);
 # $opt_q = quiet - do not open the pdf file after creating it
 
 our ($opt_f, $opt_h, $opt_o, $opt_p, $opt_q, $opt_d, $opt_w);
-my $test_card_home = "/Users/kwh/sw_projects/hg/ft_program";
+my $test_card_home = "/Users/kwh/sw_projects/git/ft_program";
 #my $test_card_home = "/home/user/hg/ft_program";
+my $database = "ft_program";
+my $database_user = "ft";
+my $database_password = "ft";
 
 my $test_card_file_start = "/$test_card_home/FT_Card_Start.tex";
 my $test_card_file_start_grd_run = "/$test_card_home/FT_Card_Start_Grd_Run.tex";
@@ -212,8 +216,8 @@ open (OUTPUT , '>' , "$OUTPUT_FILE.tex")
   or die "Can't open test card file: $!";
 
 # Connect to the database.
-my $dbh = DBI->connect("DBI:mysql:database=ft_program;host=localhost",
-                       "ft", "ft",
+my $dbh = DBI->connect("DBI:mysql:database=$database;host=localhost",
+                       "$database_user", "$database_password",
                        {'RaiseError' => 1});
 
 # Pull info from flight table.
