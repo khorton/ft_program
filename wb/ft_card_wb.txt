@@ -1,4 +1,0 @@
-# Zero Fuel Weight CG and Take-off CG
-#inches_aft_of_datum lb
-80.3690336435218 1397
-80.3115045317221 1655

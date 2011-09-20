@@ -1,1 +1,7 @@
 .DS_Store
+Test_card_flt*.*
+*.aux
+*.pdf
+*.eps
+wb_chart*.
+wb_chart_test_card.gp
