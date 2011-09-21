@@ -79,6 +79,7 @@ The mysql database contains the following tables:
       Owner - aircraft owner.
 
 Interacting with the MySQL database
+  An example MySQL database is provided in ft_program_multi_bu.sql.gz
   On OS X, Cocoa-MySQL and/or phpmyadmin are good free options to interact with the database. 
 
 Web interface
@@ -87,7 +88,7 @@ Web interface
 Example MySQL commands to interact with the database (note that some of these command lines were for an earlier set of tables and might not work with this version):
 
 # log into mysql at command line (replace "<user_name>" in command below with actual mysql user name):
-mysql -u<user_name> -p ft_program
+mysql -u<user_name> -p ft_program_multi
 
 The following commands are run in mysql, after logging in as shown above:
 
