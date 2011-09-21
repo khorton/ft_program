@@ -37,6 +37,7 @@ The mysql database contains the following tables:
   limitations - contains list of aircraft limitations to be listed on the test card.  The idea is that the applicable limitations will vary as the aircraft flight envelope is opened up.
   test_program - the details of all test points in the test program
   wb - weight and balance info.  This table should be update each time the aircraft empty weight or moment changes
+  aircraft - contains data for each aircraft.
 
   The test_program table contains the following columns:
     flag - not required to generate a test card.  Used to mark test points to be inserted in flt_tp_list, using mysql at the command line (see list of example mysql commands below)
@@ -63,11 +64,19 @@ The mysql database contains the following tables:
     sequence - sequence number for each test.  A value between 0 and 127.  Allows test points to be reordered by changing the value in this table.
 
   The wb table contains the following columns:
+    aircraft - defines the aircraft that this row is for.  Value in this column is the ID from the aircraft table.
     date - date of the weighing.  test_card.pl will choose the appropriate weight and balance data based on the flight date and the dates in this table.
     wt - empty weight
     moment - empty moment
+    mtow - the maximum take-off weight for this aircraft on this date.
     remarks
     
+    The aircraft table contains the following columns:
+      id - unique aircraft id.  Used to identify the aircraft in the wb table.
+      registration - aircraft registration (e.g. C-GNHK, or N123)
+      type - aircraft model designation
+      SerialNumber - aircraft serial number.
+      Owner - aircraft owner.
 
 Interacting with the MySQL database
   On OS X, Cocoa-MySQL and/or phpmyadmin are good free options to interact with the database. 

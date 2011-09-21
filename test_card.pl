@@ -62,16 +62,21 @@
 #            multiple times.
 #
 #         6. Allow test programs for multiple aircraft in one mysql file.
+#
+#         7. Move weight and CG limits to aircraft table, to allow different
+#            aircraft to have different values.
+#
+#         8. Support non-rectangular weight/CG envelopes.
 
 #=============================================================================
 # Done:   5. 20090227 - reworked to add new table that holds list of test 
 #            points and sequence to be flown on each flight, to facilitate 
 #            flying each test point multiple times.
 #
-#        6. 20110920 - added capacity for multiple aircraft to share same 
-#           test point data base.  New aircraft table contains details of
-#           all aircraft.  aircraft field in all other tables, except the
-#           test_program table, ties each record to a specific aircraft.
+#         6. 20110920 - added capacity for multiple aircraft to share same 
+#            test point data base.  New aircraft table contains details of
+#            all aircraft.  aircraft field in all other tables, except the
+#            test_program table, ties each record to a specific aircraft.
 
 
 use strict;
@@ -112,6 +117,8 @@ my $gnuplot_start_label_x = "";
 my $gnuplot_start_label_y = "";
 my $gnuplot_end_label_x = "";
 my $gnuplot_end_label_y = "";
+
+my $default_aircraft = "C-GNHK";
 
 my $query = "";                 # SQL query string
 my $flt_no = "";                # Flight number to create the test card for.
@@ -182,9 +189,9 @@ if(defined $options{d}){
 if(defined $options{a}){
     $aircraft = $options{a};    
 } else {
-    $aircraft = 'C-GNHK';
+    $aircraft = $default_aircraft;
 }
-print "aircraft is $aircraft\n";
+print "Creating test card for aircraft $aircraft\n";
 
 my $usage = "Flight or Ground Run number not defined (Ground Run numbers start with a G)\n
 useage: test_card.pl -f n
@@ -196,7 +203,7 @@ Optional switches: -o override weight and cg errors
                    -h history - create test card for flight that has already occured
                    -p procedure - repeat procedure even if next test point is the same type
                    -q quiet - do not open the pdf file after creating it
-                   -a aircaft - specify aircraft registration.  Default is 'C-GNHK'\n";
+                   -a aircaft - specify aircraft registration.  Uses default aircraft if this value is not provided'\n";
 
 
 if (!defined $options{f}) {
