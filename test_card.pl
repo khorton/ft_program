@@ -100,6 +100,9 @@ my $database_password = "ft";
 #### FILE LOCATION DETAILS ####
 my $home = $ENV{ HOME };
 my $test_card_home = "$home/sw_projects/git/ft_program";
+my $config_file = "$test_card_home/config.txt";
+my $Config_key;
+my %Config;
 my $test_card_file_start = "$test_card_home/FT_Card_Start.tex";
 my $test_card_file_start_grd_run = "$test_card_home/FT_Card_Start_Grd_Run.tex";
 my $test_card_file_end = "$test_card_home/FT_Card_End.tex";
@@ -118,7 +121,7 @@ my $gnuplot_start_label_y = "";
 my $gnuplot_end_label_x = "";
 my $gnuplot_end_label_y = "";
 
-my $default_aircraft = "C-GNHK";
+# my $default_aircraft = "C-GNHK";
 
 my $query = "";                 # SQL query string
 my $flt_no = "";                # Flight number to create the test card for.
@@ -172,6 +175,13 @@ $opt_o = $options{o};
 my $aircraft = $options{a};
 
 
+# read config file
+parse_config_file ($config_file, \%Config);
+
+# foreach $Config_key (keys %Config) {
+    # print "$Config_key=$Config{$Config_key}\n";
+# }
+
 if(defined $options{d}){
     $manual_date = $options{d};
     my ($year, $month, $day) = ($manual_date =~ /(\d\d\d\d)\D(\d\d)\D(\d\d)/);    
@@ -189,7 +199,8 @@ if(defined $options{d}){
 if(defined $options{a}){
     $aircraft = $options{a};    
 } else {
-    $aircraft = $default_aircraft;
+    # $aircraft = $default_aircraft;
+    $aircraft = $Config{'default_aircraft'};
 }
 print "Creating test card for aircraft $aircraft\n";
 
@@ -242,6 +253,17 @@ open (OUTPUT , '>' , "$OUTPUT_FILE.tex")
 my $dbh = DBI->connect("DBI:mysql:database=$database;host=localhost",
                        "$database_user", "$database_password",
                        {'RaiseError' => 1});
+
+# check that the specified aircraft exists
+$sth = $dbh->prepare("SELECT * FROM aircraft WHERE registration = \'$aircraft\'"); 
+$sth->execute();
+if ($sth->rows < 1) {
+    print "Fatal Error - Aircraft $aircraft was not found in the database.\n";
+    exit;
+} elsif ($sth->rows > 1) {
+    print "Fatal Error - Aircraft $aircraft appears more than once in the database.\n";
+    exit;
+}
 
 # Pull info from flight table.
 if (substr($flt_no, 0, 1) == "G") {
@@ -877,4 +899,34 @@ sub Compact_Enum
     $Output = join(" ", @temp_output);
     
     return $Output;
+}
+
+# read configuration file, from:
+# http://www.motreja.com/ankur/examplesinperl/parsing_config_files.htm
+sub parse_config_file {
+
+    my ($config_line, $Name, $Value, $Config);
+
+    (my $File, $Config) = @_;
+
+    if (!open (CONFIG, "$File")) {
+        print "ERROR: Config file not found : $File";
+        exit(0);
+    }
+
+    while (<CONFIG>) {
+        $config_line=$_;
+        chop ($config_line);          # Get rid of the trailling \n
+        $config_line =~ s/^\s*//;     # Remove spaces at the start of the line
+        $config_line =~ s/\s*$//;     # Remove spaces at the end of the line
+        if ( ($config_line !~ /^#/) && ($config_line ne "") ){    # Ignore lines starting with # and blank lines
+            ($Name, $Value) = split (/=/, $config_line);          # Split each line into name value pairs
+            $Name =~ s/\s*$//;     # Remove spaces at the end of the Name
+            $Value =~ s/^\s*//;     # Remove spaces at the start of the Value
+            $$Config{$Name} = $Value;                             # Create a hash of the name value pairs
+        }
+    }
+
+    close(CONFIG);
+
 }
