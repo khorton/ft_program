@@ -93,9 +93,9 @@ use Date::Calc qw(:all);
 our ($opt_f, $opt_h, $opt_o, $opt_p, $opt_q, $opt_d, $opt_a);
 
 #### DATABASE DETAILS ####
-my $database = "ft_program_multi";
-my $database_user = "ft";
-my $database_password = "ft";
+# my $database = "ft_program_multi";
+# my $database_user = "ft";
+# my $database_password = "ft";
 
 #### FILE LOCATION DETAILS ####
 my $home = $ENV{ HOME };
@@ -162,6 +162,7 @@ my $aft_cg_min = "86.25";       # fwd end of aft cg band (93% of CG range behind
 my $aero_cg_aft_min = "84.84"; # fwd end of aerobatic aft cg band (93% of aerobatic CG range aft of fwd limit)
 my $aero_cg_aft_max = "85.3";   # aft end of aerobatic cg band
 my $die_now = "";
+my $aircraft = "";
 
 my %options=();
 my $sth = "";
@@ -172,11 +173,15 @@ my @temp_purpose = "";
 getopts("hopqf:d:a:",\%options);
 $flt_no = $options{f};
 $opt_o = $options{o};
-my $aircraft = $options{a};
 
 
 # read config file
 parse_config_file ($config_file, \%Config);
+$aircraft = $Config{'default_aircraft'};
+my $database = $Config{'database'};
+my $database_user = $Config{'database_user'};
+my $database_password = $Config{'database_password'};
+
 
 # foreach $Config_key (keys %Config) {
     # print "$Config_key=$Config{$Config_key}\n";
@@ -198,10 +203,8 @@ if(defined $options{d}){
 
 if(defined $options{a}){
     $aircraft = $options{a};    
-} else {
-    # $aircraft = $default_aircraft;
-    $aircraft = $Config{'default_aircraft'};
 }
+
 print "Creating test card for aircraft $aircraft\n";
 
 my $usage = "Flight or Ground Run number not defined (Ground Run numbers start with a G)\n

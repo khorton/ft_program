@@ -1,1 +1,10 @@
+# config file - user must edit this file to set required values
+# 
+
 default_aircraft     =  C-GNHK
+
+# database details
+database = ft_program_multi
+database_user = ft
+database_password = ft
+
