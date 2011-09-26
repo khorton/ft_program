@@ -84,6 +84,7 @@ use DBI;
 use File::Slurp;
 use Getopt::Std;
 use Date::Calc qw(:all);
+use Cwd 'getcwd';
 # $opt_f = flight number
 # $opt_h = history - i.e. get data for flight that has already occured 
 # $opt_o = override weight and cg errors
@@ -98,8 +99,9 @@ our ($opt_f, $opt_h, $opt_o, $opt_p, $opt_q, $opt_d, $opt_a);
 # my $database_password = "ft";
 
 #### FILE LOCATION DETAILS ####
-my $home = $ENV{ HOME };
-my $test_card_home = "$home/sw_projects/git/ft_program";
+# my $home = $ENV{ HOME };
+# my $test_card_home = "$home/sw_projects/git/ft_program";
+my $test_card_home = getcwd();
 my $config_file = "$test_card_home/config.txt";
 my $Config_key;
 my %Config;
@@ -120,8 +122,6 @@ my $gnuplot_start_label_x = "";
 my $gnuplot_start_label_y = "";
 my $gnuplot_end_label_x = "";
 my $gnuplot_end_label_y = "";
-
-# my $default_aircraft = "C-GNHK";
 
 my $query = "";                 # SQL query string
 my $flt_no = "";                # Flight number to create the test card for.

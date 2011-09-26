@@ -3,7 +3,7 @@
 
 default_aircraft     =  C-GNHK
 
-# database details
+### database details ###
 database = ft_program_multi
 database_user = ft
 database_password = ft
