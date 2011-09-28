@@ -111,8 +111,11 @@ sub parse_config_file {
 
 sub CG_limits {
     # for a given database handle, aircaft and weight, return forward and aft CG limits
+    # also check whether specified weight is inside approved limits
+    
     # usage sub($database_handle, $registration, $weight)    
     # returns ($fwd_limit, $aft_limit)
+    
     my $database_handle = $_[0];
     my $registration = $_[1];
     my $weight = $_[2];
