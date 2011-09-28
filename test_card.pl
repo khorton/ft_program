@@ -192,16 +192,16 @@ if(defined $options{d}){
     my ($year, $month, $day) = ($manual_date =~ /(\d\d\d\d)\D(\d\d)\D(\d\d)/);    
     if (check_date($year,$month,$day)) {
         $manual_date = $year . "-" . $month . "-" . $day;
-        } elsif ($manual_date =~ /Today|today/){
+        } elsif ($manual_date =~ /Today|today/) {
             ($year,$month,$day) = Today();
             $manual_date = $year . "-" . $month . "-" . $day;
-        } else{
+        } else {
             print "$manual_date is not a valid date.  The date must be in the format YYYY-MM-DD, or it must be 'today'.\n";
             exit;
     }
 }
 
-if(defined $options{a}){
+if(defined $options{a}) {
     $aircraft = $options{a};    
 }
 
@@ -223,7 +223,7 @@ Optional switches: -o override weight and cg errors
 if (!defined $options{f}) {
     print $usage;
     exit;
-    }
+}
 
 # if (substr($flt_no, 0, 1) == "G") {
 #     $opt_o = 1;
@@ -237,12 +237,12 @@ $tpend = "\\end{TestPoint}\n\n\n";
 # if ($flt_no < 1) {
 if (substr($flt_no, 0, 1) == "G") {
     $opt_o = 1;
-  open (INPUT , '<' , "$test_card_file_start_grd_run")
-    or die "Can't open $!";
+    open (INPUT , '<' , "$test_card_file_start_grd_run")
+        or die "Can't open $!";
     print "Ground test\n";
 } else {
-  open (INPUT , '<' , "$test_card_file_start")
-    or die "Can't open $test_card_file_start";
+    open (INPUT , '<' , "$test_card_file_start")
+        or die "Can't open $test_card_file_start";
 }
 
 @working_data = readline INPUT;
@@ -250,7 +250,7 @@ if (substr($flt_no, 0, 1) == "G") {
 $OUTPUT_FILE = "$test_card_home/Test_card_flt_$flt_no";
 
 open (OUTPUT , '>' , "$OUTPUT_FILE.tex")
-  or die "Can't open test card file: $!";
+    or die "Can't open test card file: $!";
 
 # Connect to the database.
 my $dbh = DBI->connect("DBI:mysql:database=$database;host=localhost",
@@ -270,17 +270,14 @@ if ($sth->rows < 1) {
 
 # Pull info from flight table.
 if (substr($flt_no, 0, 1) == "G") {
-    $sth = $dbh->prepare("SELECT * FROM flights JOIN aircraft WHERE flights.flt =  \"$flt_no\" AND aircraft.registration = \'$aircraft\' AND aircraft.id = flights.aircraft"); 
-    
+    $sth = $dbh->prepare("SELECT * FROM flights JOIN aircraft WHERE flights.flt =  \"$flt_no\" AND aircraft.registration = \'$aircraft\' AND aircraft.id = flights.aircraft");     
 } else { 
     $sth = $dbh->prepare("SELECT * FROM flights JOIN aircraft WHERE flights.flt = $flt_no AND aircraft.registration = \'$aircraft\' AND aircraft.id = flights.aircraft"); 
-     
-
 }
 $sth->execute();
 
 while (my $ref = $sth->fetchrow_hashref()) {
-  %data = (
+    %data = (
                      date => $ref->{'date'},
                     pilot => $ref->{'pilot'},
                       fte => $ref->{'fte'},
@@ -302,13 +299,13 @@ while (my $ref = $sth->fetchrow_hashref()) {
 }
 $sth->finish();
 
-if ($manual_date){$data{date} = $manual_date}
+if ($manual_date) {$data{date} = $manual_date}
 
 $data{'purpose'} = Compact_Enum($data{'purpose'});
 
 # Set MTOW based on flt date
 print "Date is $data{date}\n";
-if ($data{date} gt "2010-04-20\n"){
+if ($data{date} gt "2010-04-20\n") {
     # print "Gross weight = 1900 lb\n";
     $TOW_max = "1900";
     $gnuplot_wb_file_template = "$test_card_home/wb/wb_chart_test_card_template_1900.gp";
@@ -326,9 +323,9 @@ if (substr($flt_no, 0, 1) == "G") {
 
 $sth->execute();
 while (my $ref = $sth->fetchrow_hashref()) {
-  $data{limitations} = $ref->{'latex'};
-  # print $data{limitations};
-  $data{limitations} = Compact_Enum($data{limitations});
+    $data{limitations} = $ref->{'latex'};
+    # print $data{limitations};
+    $data{limitations} = Compact_Enum($data{limitations});
 }
 $sth->finish();
 
@@ -339,12 +336,12 @@ $sth->finish();
 # if ($flt_no < 1) {
 if (substr($flt_no, 0, 1) == "G") {
     $opt_o = 1;
-  open (INPUT , '<' , "$test_card_file_start_grd_run")
-    or die "Can't open $!";
+    open (INPUT , '<' , "$test_card_file_start_grd_run")
+        or die "Can't open $!";
     print "Ground test\n";
 } else {
-  open (INPUT , '<' , "$test_card_file_start")
-    or die "Can't open $!";
+    open (INPUT , '<' , "$test_card_file_start")
+        or die "Can't open $!";
 }
 
 @working_data = readline INPUT;
@@ -352,7 +349,7 @@ if (substr($flt_no, 0, 1) == "G") {
 $OUTPUT_FILE = "$test_card_home/Test_card_flt_$flt_no";
 
 open (OUTPUT , '>' , "$OUTPUT_FILE.tex")
-  or die "Can't open test card file: $!";
+    or die "Can't open test card file: $!";
 
 ###############################################################################
 #
@@ -363,38 +360,38 @@ open (OUTPUT , '>' , "$OUTPUT_FILE.tex")
 # Pull all weighing data from wb database
 
 if ($flt_no >= 1) {
-  my $sth = $dbh->prepare("SELECT * FROM wb JOIN aircraft ON (wb.aircraft=aircraft.id AND aircraft.registration=\'$aircraft\') ORDER BY date desc"); 
-  $sth->execute();
-  
-  # select correct weighing data
-  while (my $ref = $sth->fetchrow_hashref()) {
-    if ($data{date} == "0000-00-00") {
-      # flight date is blank, so use most recent weighing
-      $empty_wt = $ref->{'wt'};
-      $empty_moment = $ref->{'moment'};
-      $data{date} = "\\hspace{1 in}";
-      last;
-    } else {
-      # find the first weighing that is earlier than the flight date (if doing 
-      # historical flight)
-      if ($ref->{'date'} le $data{date}) {
-        $empty_wt = $ref->{'wt'};
-        $empty_moment = $ref->{'moment'};
-        last;
-      }
+    my $sth = $dbh->prepare("SELECT * FROM wb JOIN aircraft ON (wb.aircraft=aircraft.id AND aircraft.registration=\'$aircraft\') ORDER BY date desc"); 
+    $sth->execute();
+
+    # select correct weighing data
+    while (my $ref = $sth->fetchrow_hashref()) {
+        if ($data{date} == "0000-00-00") {
+            # flight date is blank, so use most recent weighing
+            $empty_wt = $ref->{'wt'};
+            $empty_moment = $ref->{'moment'};
+            $data{date} = "\\hspace{1 in}";
+            last;
+        } else {
+            # find the first weighing that is earlier than the flight date (if doing 
+            # historical flight)
+            if ($ref->{'date'} le $data{date}) {
+                $empty_wt = $ref->{'wt'};
+                $empty_moment = $ref->{'moment'};
+                last;
+            }
+        }
     }
-  }
-  
-  $sth->finish();
-  
-  $data{date} = FormatDate($data{date});
-  
-  $data{empty_wt} = CommaFormatted(sprintf("%d",$empty_wt));
-  $data{empty_moment} = CommaFormatted(sprintf("%.2f",$empty_moment));
-  $data{empty_arm} = sprintf("%.2f",$empty_moment / $empty_wt);
-  
-  # calculate zero fuel weight and cg
-  $ZFW =          $empty_wt 
+
+    $sth->finish();
+
+    $data{date} = FormatDate($data{date});
+
+    $data{empty_wt} = CommaFormatted(sprintf("%d",$empty_wt));
+    $data{empty_moment} = CommaFormatted(sprintf("%.2f",$empty_moment));
+    $data{empty_arm} = sprintf("%.2f",$empty_moment / $empty_wt);
+
+    # calculate zero fuel weight and cg
+    $ZFW =          $empty_wt 
                 + $data{pilot_wt} 
                 + $data{rear_seat_wt} 
                 + $data{fwd_baggage_wt} 
@@ -402,8 +399,8 @@ if ($flt_no >= 1) {
                 + $data{rear_baggage_shelf_wt} 
                 + $data{ballast1_wt} 
                 + $data{ballast2_wt};
-  
-  $ZFW_moment = $empty_moment
+
+    $ZFW_moment = $empty_moment
                 + $data{pilot_wt} * $pilot_arm
                 + $data{rear_seat_wt} * $rear_seat_arm
                 + $data{fwd_baggage_wt} * $fwd_baggage_arm
@@ -411,112 +408,111 @@ if ($flt_no >= 1) {
                 + $data{rear_baggage_shelf_wt} * $rear_baggage_shelf_arm
                 + $data{ballast1_wt} * $data{ballast1_arm}
                 + $data{ballast2_wt} * $data{ballast2_arm};
-  
-  $ZFW_CG = $ZFW_moment / $ZFW;
-  
-  # add fuel weight and moment to get take-off weight and CG
-  $TOW = $ZFW + $data{fuel_wt};
-  $TOW_CG = ($ZFW_moment + $data{fuel_wt} * $fuel_arm) / $TOW;
-  
-  open (WB_DATA , '>' , "$wb_chart_data_file_name")
-    or die "Can't open weight and balance data file: $!";
-  
-  # print info header
-  print WB_DATA "# Zero Fuel Weight CG and Take-off CG\n#inches_aft_of_datum lb\n";
-  
-  
-  # print weight and balance data to a file to feed to gnuplot
-  print WB_DATA "$ZFW_CG $ZFW\n$TOW_CG $TOW\n";
-  
-  
-  $data{pilot_arm} = $pilot_arm;
-  $data{pilot_moment} = CommaFormatted(sprintf("%.2f",$pilot_arm * $data{pilot_wt}));
-  $data{rear_seat_arm} = $rear_seat_arm;
-  $data{rear_seat_moment} = CommaFormatted(sprintf("%.2f",$rear_seat_arm * $data{rear_seat_wt}));
-  $data{fwd_baggage_arm} = $fwd_baggage_arm;
-  $data{fwd_baggage_moment} = CommaFormatted(sprintf("%.2f",$fwd_baggage_arm * $data{fwd_baggage_wt}));
-  $data{rear_baggage_arm} = $rear_baggage_arm;
-  $data{rear_baggage_moment} = CommaFormatted(sprintf("%.2f",$rear_baggage_arm * $data{rear_baggage_wt}));
-  $data{rear_baggage_shelf_arm} = $rear_baggage_shelf_arm;
-  $data{rear_baggage_shelf_moment} = CommaFormatted(sprintf("%.2f",$rear_baggage_shelf_arm * $data{rear_baggage_shelf_wt}));
-  $data{ballast1_moment} = CommaFormatted(sprintf("%.2f",$data{ballast1_arm} * $data{ballast1_wt}));
-  $data{ballast2_moment} = CommaFormatted(sprintf("%.2f",$data{ballast2_arm} * $data{ballast2_wt}));
-  $data{zfw} = CommaFormatted(sprintf("%d", $ZFW));
-  $data{zfw_cg} = sprintf("%.2f",$ZFW_CG);
-  $data{zfw_moment} = CommaFormatted(sprintf("%.2f",$ZFW_CG * $ZFW));
-  $data{fuel_arm} = $fuel_arm;
-  $data{fuel_moment} = CommaFormatted(sprintf("%.2f",$fuel_arm * $data{fuel_wt}));
-  $data{to_wt} = CommaFormatted(sprintf ("%d",$TOW));
-  $data{to_cg} = sprintf ("%.2f",$TOW_CG);
-  $data{to_moment} = CommaFormatted(sprintf("%.2f",$TOW * $TOW_CG));
-  $data{wb_chart} = $gnuplot_directory . "wb_chart";
-  
-  # unless ($opt_o == "1") {
-  unless ($opt_o) {
-  #  print "Take off weight is $TOW.  MTOW is $TOW_max.\n";
-    if ($TOW > $TOW_max) {
-      $die_now ++;
-      print qq(***The aircraft weight exceeds the MTOW.***\n);
+
+    $ZFW_CG = $ZFW_moment / $ZFW;
+
+    # add fuel weight and moment to get take-off weight and CG
+    $TOW = $ZFW + $data{fuel_wt};
+    $TOW_CG = ($ZFW_moment + $data{fuel_wt} * $fuel_arm) / $TOW;
+
+    open (WB_DATA , '>' , "$wb_chart_data_file_name")
+        or die "Can't open weight and balance data file: $!";
+
+    # print info header
+    print WB_DATA "# Zero Fuel Weight CG and Take-off CG\n#inches_aft_of_datum lb\n";
+
+
+    # print weight and balance data to a file to feed to gnuplot
+    print WB_DATA "$ZFW_CG $ZFW\n$TOW_CG $TOW\n";
+
+
+    $data{pilot_arm} = $pilot_arm;
+    $data{pilot_moment} = CommaFormatted(sprintf("%.2f",$pilot_arm * $data{pilot_wt}));
+    $data{rear_seat_arm} = $rear_seat_arm;
+    $data{rear_seat_moment} = CommaFormatted(sprintf("%.2f",$rear_seat_arm * $data{rear_seat_wt}));
+    $data{fwd_baggage_arm} = $fwd_baggage_arm;
+    $data{fwd_baggage_moment} = CommaFormatted(sprintf("%.2f",$fwd_baggage_arm * $data{fwd_baggage_wt}));
+    $data{rear_baggage_arm} = $rear_baggage_arm;
+    $data{rear_baggage_moment} = CommaFormatted(sprintf("%.2f",$rear_baggage_arm * $data{rear_baggage_wt}));
+    $data{rear_baggage_shelf_arm} = $rear_baggage_shelf_arm;
+    $data{rear_baggage_shelf_moment} = CommaFormatted(sprintf("%.2f",$rear_baggage_shelf_arm * $data{rear_baggage_shelf_wt}));
+    $data{ballast1_moment} = CommaFormatted(sprintf("%.2f",$data{ballast1_arm} * $data{ballast1_wt}));
+    $data{ballast2_moment} = CommaFormatted(sprintf("%.2f",$data{ballast2_arm} * $data{ballast2_wt}));
+    $data{zfw} = CommaFormatted(sprintf("%d", $ZFW));
+    $data{zfw_cg} = sprintf("%.2f",$ZFW_CG);
+    $data{zfw_moment} = CommaFormatted(sprintf("%.2f",$ZFW_CG * $ZFW));
+    $data{fuel_arm} = $fuel_arm;
+    $data{fuel_moment} = CommaFormatted(sprintf("%.2f",$fuel_arm * $data{fuel_wt}));
+    $data{to_wt} = CommaFormatted(sprintf ("%d",$TOW));
+    $data{to_cg} = sprintf ("%.2f",$TOW_CG);
+    $data{to_moment} = CommaFormatted(sprintf("%.2f",$TOW * $TOW_CG));
+    $data{wb_chart} = $gnuplot_directory . "wb_chart";
+
+    # unless ($opt_o == "1") {
+    unless ($opt_o) {
+    #  print "Take off weight is $TOW.  MTOW is $TOW_max.\n";
+        if ($TOW > $TOW_max) {
+          $die_now ++;
+          print qq(***The aircraft weight exceeds the MTOW.***\n);
+        }
+
+        if ($TOW_CG < $fwd_cg_limit) {
+            $die_now ++;
+            print qq(***The take-off CG is forward of the forward CG limit.***\n);
+        }
+
+        if ($TOW_CG > $aft_cg_limit) {
+            $die_now ++;
+            print qq(***The take-off CG is aft of the aft CG limit.***\n);
+        }
+
+        if ($ZFW_CG < $fwd_cg_limit) {
+            $die_now ++;
+            print qq(***The zero-fuel CG is forward of the forward CG limit.***\n);
+        }
+
+        if ($ZFW_CG > $aft_cg_limit) {
+            $die_now ++;
+            print qq(***The zero-fuel CG is aft of the aft CG limit.***\n);
+        }
     }
-    
-    if ($TOW_CG < $fwd_cg_limit) {
-      $die_now ++;
-      print qq(***The take-off CG is forward of the forward CG limit.***\n);
-    }
-  
-    if ($TOW_CG > $aft_cg_limit) {
-      $die_now ++;
-      print qq(***The take-off CG is aft of the aft CG limit.***\n);
-    }
-  
-    if ($ZFW_CG < $fwd_cg_limit) {
-      $die_now ++;
-      print qq(***The zero-fuel CG is forward of the forward CG limit.***\n);
-    }
-  
-    if ($ZFW_CG > $aft_cg_limit) {
-      $die_now ++;
-      print qq(***The zero-fuel CG is aft of the aft CG limit.***\n);
-    }
-  }
-  
-  # write gnuplot file with fuel burn line and labels
-  $gnuplot_file = read_file($gnuplot_wb_file_template);
-  $gnuplot_start_label_x = $TOW_CG + 0.1;
-  $gnuplot_start_label_y = $TOW;
-  $gnuplot_end_label_x   = $ZFW_CG + 0.1;
-  $gnuplot_end_label_y   = $ZFW;
-  %gnuplot_labels = (
+
+    # write gnuplot file with fuel burn line and labels
+    $gnuplot_file = read_file($gnuplot_wb_file_template);
+    $gnuplot_start_label_x = $TOW_CG + 0.1;
+    $gnuplot_start_label_y = $TOW;
+    $gnuplot_end_label_x   = $ZFW_CG + 0.1;
+    $gnuplot_end_label_y   = $ZFW;
+    %gnuplot_labels = (
        START => "$gnuplot_start_label_x" . "," . "$gnuplot_start_label_y",
          END => "$gnuplot_end_label_x" . "," . "$gnuplot_end_label_y"
-     );
-  
-  # Place label in gnuplot file.
-  $gnuplot_file =~ s/<<<(\w+)>>>/$gnuplot_labels{$1}/g;
-  
-  # Place output file location in gnuplot file.
-  $gnuplot_file =~ s/>>>GNUPLOT_DIR<<</$gnuplot_directory/g;
-  
-  
-  open (GNUPLOT , '>' , "$gnuplot_wb_file")
+    );
+
+    # Place label in gnuplot file.
+    $gnuplot_file =~ s/<<<(\w+)>>>/$gnuplot_labels{$1}/g;
+
+    # Place output file location in gnuplot file.
+    $gnuplot_file =~ s/>>>GNUPLOT_DIR<<</$gnuplot_directory/g;
+
+    open (GNUPLOT , '>' , "$gnuplot_wb_file")
     or die "Can't open test card file: $!";
-  
-  print GNUPLOT "### THIS FILE IS AUTOMATICALLY GENERATED FROM $gnuplot_wb_file_template ###\n";
-  print GNUPLOT "### DO NOT WASTE YOUR TIME EDITING THIS FILE ###\n\n";
-  print GNUPLOT "$gnuplot_file\n";
-  
-  system "gnuplot $gnuplot_wb_file";
-  system "epstopdf --outfile $test_card_home/wb/wb_chart.pdf $test_card_home/wb/wb_chart.eps";
+
+    print GNUPLOT "### THIS FILE IS AUTOMATICALLY GENERATED FROM $gnuplot_wb_file_template ###\n";
+    print GNUPLOT "### DO NOT WASTE YOUR TIME EDITING THIS FILE ###\n\n";
+    print GNUPLOT "$gnuplot_file\n";
+
+    system "gnuplot $gnuplot_wb_file";
+    system "epstopdf --outfile $test_card_home/wb/wb_chart.pdf $test_card_home/wb/wb_chart.eps";
 } else {
-  # format date for ground run
-  $data{date} = FormatDate($data{date});
+    # format date for ground run
+    $data{date} = FormatDate($data{date});
 }
 ###############################################################################
 
 
 # Replace data in test card start file with data from the database.
 foreach (@working_data) {
-  $_ =~ s/<<<(\w+)>>>/$data{$1}/g;
+    $_ =~ s/<<<(\w+)>>>/$data{$1}/g;
 }
 
 # write start of test card, with placeholder data replaced with stuff from database
@@ -526,149 +522,143 @@ print OUTPUT "@working_data\n";
 
 # Pull test points from the test_program table.
 if (substr($flt_no, 0, 1) == "G") {
-  $query = "SELECT test_program.id, flt_tp_list.flt, test, flt_tp_list.sequence, speed, altitude, power, flaps, remarks, wt, cg, latex, status, risk, tp FROM test_program JOIN (flt_tp_list, aircraft) ON (test_program.id=flt_tp_list.tp_id AND flt_tp_list.aircraft=aircraft.id AND aircraft.registration=$aircraft AND flt_tp_list.flt = \"$flt_no\" ORDER BY flt_tp_list.sequence";
+    $query = "SELECT test_program.id, flt_tp_list.flt, test, flt_tp_list.sequence, speed, altitude, power, flaps, remarks, wt, cg, latex, status, risk, tp FROM test_program JOIN (flt_tp_list, aircraft) ON (test_program.id=flt_tp_list.tp_id AND flt_tp_list.aircraft=aircraft.id AND aircraft.registration=$aircraft AND flt_tp_list.flt = \"$flt_no\" ORDER BY flt_tp_list.sequence";
 } else {
-  $query = "SELECT test_program.id, flt_tp_list.flt, test, flt_tp_list.sequence, speed, altitude, power, flaps, remarks, wt, cg, latex, status, risk, tp FROM test_program JOIN (flt_tp_list, aircraft) ON (test_program.id=flt_tp_list.tp_id AND flt_tp_list.aircraft=aircraft.id AND aircraft.registration=\'$aircraft\' AND flt_tp_list.flt = $flt_no) ORDER BY flt_tp_list.sequence";}
-  print "$query\n";
-my $sth = $dbh->prepare("$query"); 
-$sth->execute();
-while (my $ref = $sth->fetchrow_hashref()) {
+    $query = "SELECT test_program.id, flt_tp_list.flt, test, flt_tp_list.sequence, speed, altitude, power, flaps, remarks, wt, cg, latex, status, risk, tp FROM test_program JOIN (flt_tp_list, aircraft) ON (test_program.id=flt_tp_list.tp_id AND flt_tp_list.aircraft=aircraft.id AND aircraft.registration=\'$aircraft\' AND flt_tp_list.flt = $flt_no) ORDER BY flt_tp_list.sequence";}
+    print "$query\n";
+    my $sth = $dbh->prepare("$query"); 
+    $sth->execute();
+    while (my $ref = $sth->fetchrow_hashref()) {
 
-    %tpdata = (
-        test => uc ($ref->{'test'}),
-       speed => $ref->{'speed'},
-    altitude => CommaFormatted($ref->{'altitude'}),
-       power => $ref->{'power'},
-       flaps => $ref->{'flaps'},
-          wt => $ref->{'wt'},
-          cg => $ref->{'cg'},
-          tp => $ref->{'tp'},
-     remarks => $ref->{'remarks'},
-        risk => $ref->{'risk'},
-    );
-  
-
-    
-# check test point weight and cg requirements against aircraft loading
-unless ($opt_o) {
-  $die_now += Verfiy_Wt_CG ( $tpdata{wt}, $tpdata{cg}, $tpdata{tp}, $tpdata{test}, $TOW, $TOW_CG );
-}
+        %tpdata = (
+            test => uc ($ref->{'test'}),
+           speed => $ref->{'speed'},
+        altitude => CommaFormatted($ref->{'altitude'}),
+           power => $ref->{'power'},
+           flaps => $ref->{'flaps'},
+              wt => $ref->{'wt'},
+              cg => $ref->{'cg'},
+              tp => $ref->{'tp'},
+         remarks => $ref->{'remarks'},
+            risk => $ref->{'risk'},
+        );
 
 
-# put test name in template
-$tpstart = $tpstart_template;
-$tpstart =~ s/<<<(\w+)>>>/$tpdata{$1}/g;
 
-# check to see if speed field contains V + following letters that should be formatted
-# as a subscript    
-$tpdata{speed} =~ s/V(\w+)/\$\\mathrm{V_{$1}}\$/g;
-
-# if speed is only digits, save digits for later use, and add units
-$tpdata{speed} =~ s/^(\d+)$/$1 kt/g;
-$tpdata{speed_digits} = $1;
-
-# if altitude is only digits, add units
-$tpdata{altitude} =~ s/^(\d+,*\d*)$/$1 ft/g;
-
-# convert flaps to upper case
-$tpdata{flaps} = uc($tpdata{flaps});
-
-# convert power to upper case
-$tpdata{power} = uc($tpdata{power});
-
-# check for latex \textdegree in power
-$tpdata{power} =~ s/\\TEXTDEGREE/\\textdegree/g;
-
-# fix "%" in power, as latex sees "%" as a comment
-# need two backslashes before the "%", as latex needs to get "\%", or it will
-# be a comment, and perl eats one backslash.
-$tpdata{power} =~ s/^(\d+)%/$1\\%/g;
-
-  if ($ref->{'latex'}) {
-    
-    # Check to see if latex field is just a pointer to a template
-    if ($ref->{'latex'} =~  /QQQ(\w+)WWW/) {
-      $template_home = $test_card_home . "/" . $1 . "/";
-      # see if this test is the same as the last one
-      if ($last_test eq $1 && ($opt_p)) {
-#      if ($last_test eq $1) {
-        # same type of test as last time, so don't need to get Procedure again
-        # get Conditions part of test card, if not a ground test
-        if ($flt_no >= 1) {
-          $template = $template_home . "conditions.tex";
-          $ref->{'latex'} = read_file($template);
-        print "In the loop.\n";
-#        exit;
-        }
-        
-        # get data recording part of test card
-        $template = $template_home . "data.tex";
-        $ref->{'latex'} = $ref->{'latex'} . read_file($template);
-      } else {
-        # different type of test from last time, so need to get Procedure and Risk
-        # get Conditions part of test card, if not a ground test
-        if ($flt_no >= 1) {
-          $template = $template_home . "conditions.tex";
-          $ref->{'latex'} = read_file($template);
+        # check test point weight and cg requirements against aircraft loading
+        unless ($opt_o) {
+            $die_now += Verfiy_Wt_CG ( $tpdata{wt}, $tpdata{cg}, $tpdata{tp}, $tpdata{test}, $TOW, $TOW_CG );
         }
 
-        # get Procedure part of test card
-        $template = $template_home . "procedure.tex";
-        $ref->{'latex'} = $ref->{'latex'} . read_file($template);
-        
-        $template = $template_home . "risk.tex";
-        # check to see if risk.tex exists
-        if (-e $template) {
-          $ref->{'latex'} = $ref->{'latex'} . read_file($template);
+
+        # put test name in template
+        $tpstart = $tpstart_template;
+        $tpstart =~ s/<<<(\w+)>>>/$tpdata{$1}/g;
+
+        # check to see if speed field contains V + following letters that should be formatted
+        # as a subscript    
+        $tpdata{speed} =~ s/V(\w+)/\$\\mathrm{V_{$1}}\$/g;
+
+        # if speed is only digits, save digits for later use, and add units
+        $tpdata{speed} =~ s/^(\d+)$/$1 kt/g;
+        $tpdata{speed_digits} = $1;
+
+        # if altitude is only digits, add units
+        $tpdata{altitude} =~ s/^(\d+,*\d*)$/$1 ft/g;
+
+        # convert flaps to upper case
+        $tpdata{flaps} = uc($tpdata{flaps});
+
+        # convert power to upper case
+        $tpdata{power} = uc($tpdata{power});
+
+        # check for latex \textdegree in power
+        $tpdata{power} =~ s/\\TEXTDEGREE/\\textdegree/g;
+
+        # fix "%" in power, as latex sees "%" as a comment
+        # need two backslashes before the "%", as latex needs to get "\%", or it will
+        # be a comment, and perl eats one backslash.
+        $tpdata{power} =~ s/^(\d+)%/$1\\%/g;
+
+        if ($ref->{'latex'}) {
+            # Check to see if latex field is just a pointer to a template
+            if ($ref->{'latex'} =~  /QQQ(\w+)WWW/) {
+                $template_home = $test_card_home . "/" . $1 . "/";
+                # see if this test is the same as the last one
+                if ($last_test eq $1 && ($opt_p)) {
+                # same type of test as last time, so don't need to get Procedure again
+                # get Conditions part of test card, if not a ground test
+                    if ($flt_no >= 1) {
+                        $template = $template_home . "conditions.tex";
+                        $ref->{'latex'} = read_file($template);
+                    }
+
+                    # get data recording part of test card
+                    $template = $template_home . "data.tex";
+                    $ref->{'latex'} = $ref->{'latex'} . read_file($template);
+                } else {
+                    # different type of test from last time, so need to get Procedure and Risk
+                    # get Conditions part of test card, if not a ground test
+                    if ($flt_no >= 1) {
+                        $template = $template_home . "conditions.tex";
+                        $ref->{'latex'} = read_file($template);
+                    }
+
+                    # get Procedure part of test card
+                    $template = $template_home . "procedure.tex";
+                    $ref->{'latex'} = $ref->{'latex'} . read_file($template);
+
+                    $template = $template_home . "risk.tex";
+                    # check to see if risk.tex exists
+                    if (-e $template) {
+                        $ref->{'latex'} = $ref->{'latex'} . read_file($template);
+                    }
+
+                    # get data recording part of test card
+                    $template = $template_home . "data.tex";
+                    $ref->{'latex'} = $ref->{'latex'} . read_file($template);
+                }
+
+                # store type of test
+                $last_test = $1;
+            }
+        } else {
+            # no latex code for this test point
+            $last_test = "";
+            # get Conditions part of test card, if not a ground test
+            if ($flt_no >= 1) {
+                $template = $test_card_home . "/conditions.tex";
+                $ref->{'latex'} = read_file($template);
+            }
+    
+            # add remarks from database to put in Procedure part
+            $ref->{'latex'} = $ref->{'latex'} . "\n" . "\\subsubsection*{Procedure}\n"; 
+            # put any subscripts to V in correct format
+            # $ref->{'remarks'} =~ s/V(\w{1,4}\s)/\$\\mathrm{V_{$1}}\$/g;
+            $ref->{'remarks'} =~ s/(\d+.*\d+\s*)V(\w{1,4})/\$\\mathrm{$1V_{$2}}\$/g;
+    
+            # fix any "%" so they are not seen as latex comments
+            $ref->{'remarks'} =~ s/^(\d+)%/$1\\%/g;
+
+            #convert remarks to LaTeX compactenum
+            $ref->{'remarks'} = Compact_Enum($ref->{'remarks'});
+
+            $ref->{'latex'} = $ref->{'latex'} . "\n" . $ref->{'remarks'} . "\n";
+    
+            # get data recording part of test card
+            $ref->{'latex'} = $ref->{'latex'} . '\\include{Observations}' . "\n";
         }
-        
-        # get data recording part of test card
-        $template = $template_home . "data.tex";
-        $ref->{'latex'} = $ref->{'latex'} . read_file($template);
-      }
 
-      # store type of test
-      $last_test = $1;
-    }
-  } else {
-    # no latex code for this test point
-    $last_test = "";
-#   get Conditions part of test card, if not a ground test
-        if ($flt_no >= 1) {
-          $template = $test_card_home . "/conditions.tex";
-          $ref->{'latex'} = read_file($template);
-        }
-    
-    # add remarks from database to put in Procedure part
-    $ref->{'latex'} = $ref->{'latex'} . "\n" . "\\subsubsection*{Procedure}\n"; 
-    # put any subscripts to V in correct format
-    # $ref->{'remarks'} =~ s/V(\w{1,4}\s)/\$\\mathrm{V_{$1}}\$/g;
-    $ref->{'remarks'} =~ s/(\d+.*\d+\s*)V(\w{1,4})/\$\\mathrm{$1V_{$2}}\$/g;
-    
-    # fix any "%" so they are not seen as latex comments
-    $ref->{'remarks'} =~ s/^(\d+)%/$1\\%/g;
-
-    #convert remarks to LaTeX compactenum
-    $ref->{'remarks'} = Compact_Enum($ref->{'remarks'});
-
-    $ref->{'latex'} = $ref->{'latex'} . "\n" . $ref->{'remarks'} . "\n";
-    
-    # get data recording part of test card
-    $ref->{'latex'} = $ref->{'latex'} . '\\include{Observations}' . "\n";
-
-    
-    
-  }
-#    insert test point data in place of the data in the template
+        # insert test point data in place of the data in the template
      
-     $ref->{'latex'} =~ s/<<<(\w+)>>>/$tpdata{$1}/g;
-     push (@working_data, "$tpstart");
-     push (@working_data, "$ref->{'latex'}");
-     if ($ref->{'risk'}) {
-       push (@working_data, "\\subsubsection*{Risk Mitigation} $ref->{'risk'}");
-     }
-#     push (@working_data, "RISK");
-     push (@working_data, "$tpend");
+         $ref->{'latex'} =~ s/<<<(\w+)>>>/$tpdata{$1}/g;
+         push (@working_data, "$tpstart");
+         push (@working_data, "$ref->{'latex'}");
+         if ($ref->{'risk'}) {
+            push (@working_data, "\\subsubsection*{Risk Mitigation} $ref->{'risk'}");
+         }
+        # push (@working_data, "RISK");
+        push (@working_data, "$tpend");
 
 }
 $sth->finish();
@@ -691,8 +681,8 @@ $dbh->disconnect();
 
 # check to see if should die now due to wt or cg issues, or run the latex
 if ($die_now > 0) {
-  my $truncated_CG = sprintf("%.2f",$TOW_CG);
-  die qq(\nAircraft weight is $TOW lb with a CG of $truncated_CG.
+    my $truncated_CG = sprintf("%.2f",$TOW_CG);
+    die qq(\nAircraft weight is $TOW lb with a CG of $truncated_CG.
 ***There are $die_now weight or CG problems.***
 run "test_card.pl -f $flt_no -o" to override the weight and CG errors.\n);
 }
