@@ -24,53 +24,59 @@ my $dbh = DBI->connect("DBI:mysql:database=$database;host=localhost",
                        "$database_user", "$database_password",
                        {'RaiseError' => 1});
 
-# check that the specified aircraft exists
-$sth = $dbh->prepare("SELECT * FROM aircraft WHERE registration = \'$aircraft\'"); 
-$sth->execute();
-if ($sth->rows < 1) {
-    print "Fatal Error - Aircraft $aircraft was not found in the database.\n";
-    exit;
-} elsif ($sth->rows > 1) {
-    print "Fatal Error - Aircraft $aircraft appears more than once in the database.\n";
-    exit;
-}
+my $w = 99500;
+(my $f, $a) = CG_limits($dbh, $aircraft, $w);
+print "fwd lim = $f, aft lim = $a\n";
+exit;
 
-while (my $ref = $sth->fetchrow_hashref()) {
-  %data = (
-                     type => $ref->{'type'},
-                      MSN => $ref->{'SerialNumber'},
-                    owner => $ref->{'Owner'},
-                    min_wt => $ref->{'min_wt'},
-                   fwd_wts => $ref->{'fwd_wts'},
-                   fwd_cgs => $ref->{'fwd_cgs'},
-                   aft_wts => $ref->{'aft_wts'},
-                   aft_cgs => $ref->{'aft_cgs'}
-    );
-}
-$sth->finish();
 
-my @fwd_wts = split(',',$data{fwd_wts});
-my @fwd_cgs = split(',',$data{fwd_cgs});
+# # check that the specified aircraft exists
+# $sth = $dbh->prepare("SELECT * FROM aircraft WHERE registration = \'$aircraft\'"); 
+# $sth->execute();
+# if ($sth->rows < 1) {
+#     print "Fatal Error - Aircraft $aircraft was not found in the database.\n";
+#     exit;
+# } elsif ($sth->rows > 1) {
+#     print "Fatal Error - Aircraft $aircraft appears more than once in the database.\n";
+#     exit;
+# }
+# 
+# while (my $ref = $sth->fetchrow_hashref()) {
+#   %data = (
+#                      type => $ref->{'type'},
+#                       MSN => $ref->{'serial_number'},
+#                     owner => $ref->{'owner'},
+#                     min_wt => $ref->{'min_wt'},
+#                    fwd_wts => $ref->{'fwd_wts'},
+#                    fwd_cgs => $ref->{'fwd_cgs'},
+#                    aft_wts => $ref->{'aft_wts'},
+#                    aft_cgs => $ref->{'aft_cgs'}
+#     );
+# }
+# $sth->finish();
+# 
+# my @fwd_wts = split(',',$data{fwd_wts});
+# my @fwd_cgs = split(',',$data{fwd_cgs});
 
-my ($wt, $cg) = (83000, 21);
+# my ($wt, $cg) = (83000, 21);
 
-my $n = 0;
-my ($wt1, $cg1, $wt2, $cg2, $lim_cg) = (0, 0, 0, 0, 0);
-for $wt2 (@fwd_wts){
-    # print "$wt2, $fwd_cgs[$n]\n";
-    $cg2 = $fwd_cgs[$n];
-    if ($wt2 > $wt){
-        print "$wt2, $cg2\n";
-        print "$wt1, $cg1\n";
-        $lim_cg = $cg1 + ($cg2 - $cg1) * ($wt - $wt1) / ($wt2 - $wt1);
-        print "limit CG at $wt = $lim_cg\n";
-        if ($cg < $lim_cg){print "CG too far fwd\n"}
-        exit;
-    } else {
-        ($wt1, $cg1) = ($wt2, $cg2);
-    }
-    $n = $n + 1;
-    }
+# my $n = 0;
+# my ($wt1, $cg1, $wt2, $cg2, $lim_cg) = (0, 0, 0, 0, 0);
+# for $wt2 (@fwd_wts){
+#     # print "$wt2, $fwd_cgs[$n]\n";
+#     $cg2 = $fwd_cgs[$n];
+#     if ($wt2 > $wt){
+#         print "$wt2, $cg2\n";
+#         print "$wt1, $cg1\n";
+#         $lim_cg = $cg1 + ($cg2 - $cg1) * ($wt - $wt1) / ($wt2 - $wt1);
+#         print "limit CG at $wt = $lim_cg\n";
+#         if ($cg < $lim_cg){print "CG too far fwd\n"}
+#         exit;
+#     } else {
+#         ($wt1, $cg1) = ($wt2, $cg2);
+#     }
+#     $n = $n + 1;
+#     }
 # my $fwd_line_len = @fwd_line;
 # print "$fwd_line_len\n";
 
@@ -102,4 +108,81 @@ sub parse_config_file {
 
     close(CONFIG);
 
+}
+
+sub CG_limits {
+# for a given database handle, aircaft and weight, return forward and aft CG limits
+# usage sub($database_handle, $registration, $weight)    
+# returns ($fwd_limit, $aft_limit)
+my $database_handle = $_[0];
+my $registration = $_[1];
+my $weight = $_[2];
+
+$sth = $database_handle->prepare("SELECT * FROM aircraft WHERE registration = \'$registration\'"); 
+$sth->execute();
+while (my $ref = $sth->fetchrow_hashref()) {
+  %data = (
+            min_wt => $ref->{'min_wt'},
+            max_wt => $ref->{'max_wt'},
+           fwd_wts => $ref->{'fwd_wts'},
+           fwd_cgs => $ref->{'fwd_cgs'},
+           aft_wts => $ref->{'aft_wts'},
+           aft_cgs => $ref->{'aft_cgs'}
+                                       );
+}
+$sth->finish();
+
+if ($weight < $data{min_wt}){
+    print "Fatal error - specified weight is less than approved minimum flight weight\n";
+    exit;
+}
+
+if ($weight > $data{max_wt}){
+    print "Fatal error - specified weight is greater than approved maximum take-off weight\n";
+    exit;
+}
+
+my @fwd_wts = split(',',$data{fwd_wts});
+my @fwd_cgs = split(',',$data{fwd_cgs});
+my @aft_wts = split(',',$data{aft_wts});
+my @aft_cgs = split(',',$data{aft_cgs});
+
+# print "@fwd_wts\n";
+# my ($wt, $cg) = (83000, 21);
+
+my $n = 0;
+my ($wt1, $cg1, $wt2, $cg2, $fwd_cg_lim, $aft_cg_lim) = (0, 0, 0, 0, 0, 0);
+for $wt2 (@fwd_wts){
+    $cg2 = $fwd_cgs[$n];
+    if ($wt2 == $weight){
+        $fwd_cg_lim = $cg2;
+        last;
+    } elsif ($wt2 >= $weight){
+        $fwd_cg_lim = $cg1 + ($cg2 - $cg1) * ($weight - $wt1) / ($wt2 - $wt1);
+        last;
+        } else {
+            ($wt1, $cg1) = ($wt2, $cg2);
+        }
+    $n = $n + 1;
+    }
+
+($wt1, $cg1, $wt2, $cg2, $n) = (0, 0, 0, 0, 0);
+for $wt2 (@aft_wts){
+    # print "$wt2, $fwd_cgs[$n]\n";
+    $cg2 = $aft_cgs[$n];
+    if ($wt2 == $weight){
+        $aft_cg_lim = $cg2;
+        last;
+    } elsif ($wt2 >= $weight){
+        # print "$wt2, $cg2\n";
+        # print "$wt1, $cg1\n";
+        $aft_cg_lim = $cg1 + ($cg2 - $cg1) * ($weight - $wt1) / ($wt2 - $wt1);
+        last;
+        } else {
+            ($wt1, $cg1) = ($wt2, $cg2);
+        }
+    $n = $n + 1;
+    }
+
+return ($fwd_cg_lim, $aft_cg_lim);
 }
