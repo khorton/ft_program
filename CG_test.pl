@@ -24,7 +24,7 @@ my $dbh = DBI->connect("DBI:mysql:database=$database;host=localhost",
                        "$database_user", "$database_password",
                        {'RaiseError' => 1});
 
-my $w = 99500;
+my $w = 78600;
 (my $f, $a) = CG_limits($dbh, $aircraft, $w);
 print "fwd lim = $f, aft lim = $a\n";
 exit;
@@ -83,7 +83,6 @@ exit;
 # read configuration file, from:
 # http://www.motreja.com/ankur/examplesinperl/parsing_config_files.htm
 sub parse_config_file {
-
     my ($config_line, $Name, $Value, $Config);
 
     (my $File, $Config) = @_;
@@ -98,7 +97,7 @@ sub parse_config_file {
         chop ($config_line);          # Get rid of the trailling \n
         $config_line =~ s/^\s*//;     # Remove spaces at the start of the line
         $config_line =~ s/\s*$//;     # Remove spaces at the end of the line
-        if ( ($config_line !~ /^#/) && ($config_line ne "") ){    # Ignore lines starting with # and blank lines
+        if ( ($config_line !~ /^#/) && ($config_line ne "") ) {    # Ignore lines starting with # and blank lines
             ($Name, $Value) = split (/=/, $config_line);          # Split each line into name value pairs
             $Name =~ s/\s*$//;     # Remove spaces at the end of the Name
             $Value =~ s/^\s*//;     # Remove spaces at the start of the Value
@@ -111,78 +110,65 @@ sub parse_config_file {
 }
 
 sub CG_limits {
-# for a given database handle, aircaft and weight, return forward and aft CG limits
-# usage sub($database_handle, $registration, $weight)    
-# returns ($fwd_limit, $aft_limit)
-my $database_handle = $_[0];
-my $registration = $_[1];
-my $weight = $_[2];
+    # for a given database handle, aircaft and weight, return forward and aft CG limits
+    # usage sub($database_handle, $registration, $weight)    
+    # returns ($fwd_limit, $aft_limit)
+    my $database_handle = $_[0];
+    my $registration = $_[1];
+    my $weight = $_[2];
 
-$sth = $database_handle->prepare("SELECT * FROM aircraft WHERE registration = \'$registration\'"); 
-$sth->execute();
-while (my $ref = $sth->fetchrow_hashref()) {
-  %data = (
-            min_wt => $ref->{'min_wt'},
-            max_wt => $ref->{'max_wt'},
-           fwd_wts => $ref->{'fwd_wts'},
-           fwd_cgs => $ref->{'fwd_cgs'},
-           aft_wts => $ref->{'aft_wts'},
-           aft_cgs => $ref->{'aft_cgs'}
-                                       );
-}
-$sth->finish();
+    $sth = $database_handle->prepare("SELECT * FROM aircraft WHERE registration = \'$registration\'"); 
+    $sth->execute();
+    while (my $ref = $sth->fetchrow_hashref()) {
+    %data = (
+              min_wt => $ref->{'min_wt'},
+              max_wt => $ref->{'max_wt'},
+             fwd_wts => $ref->{'fwd_wts'},
+             fwd_cgs => $ref->{'fwd_cgs'},
+             aft_wts => $ref->{'aft_wts'},
+             aft_cgs => $ref->{'aft_cgs'}
+                                         );
+    }
+    $sth->finish();
 
-if ($weight < $data{min_wt}){
-    print "Fatal error - specified weight is less than approved minimum flight weight\n";
-    exit;
-}
-
-if ($weight > $data{max_wt}){
-    print "Fatal error - specified weight is greater than approved maximum take-off weight\n";
-    exit;
-}
-
-my @fwd_wts = split(',',$data{fwd_wts});
-my @fwd_cgs = split(',',$data{fwd_cgs});
-my @aft_wts = split(',',$data{aft_wts});
-my @aft_cgs = split(',',$data{aft_cgs});
-
-# print "@fwd_wts\n";
-# my ($wt, $cg) = (83000, 21);
-
-my $n = 0;
-my ($wt1, $cg1, $wt2, $cg2, $fwd_cg_lim, $aft_cg_lim) = (0, 0, 0, 0, 0, 0);
-for $wt2 (@fwd_wts){
-    $cg2 = $fwd_cgs[$n];
-    if ($wt2 == $weight){
-        $fwd_cg_lim = $cg2;
-        last;
-    } elsif ($wt2 >= $weight){
-        $fwd_cg_lim = $cg1 + ($cg2 - $cg1) * ($weight - $wt1) / ($wt2 - $wt1);
-        last;
-        } else {
-            ($wt1, $cg1) = ($wt2, $cg2);
-        }
-    $n = $n + 1;
+    if ($weight < $data{min_wt}) {
+        print "Fatal error - specified weight is less than approved minimum flight weight\n";
+        exit;
     }
 
-($wt1, $cg1, $wt2, $cg2, $n) = (0, 0, 0, 0, 0);
-for $wt2 (@aft_wts){
-    # print "$wt2, $fwd_cgs[$n]\n";
-    $cg2 = $aft_cgs[$n];
-    if ($wt2 == $weight){
-        $aft_cg_lim = $cg2;
-        last;
-    } elsif ($wt2 >= $weight){
-        # print "$wt2, $cg2\n";
-        # print "$wt1, $cg1\n";
-        $aft_cg_lim = $cg1 + ($cg2 - $cg1) * ($weight - $wt1) / ($wt2 - $wt1);
-        last;
-        } else {
-            ($wt1, $cg1) = ($wt2, $cg2);
-        }
-    $n = $n + 1;
+    if ($weight > $data{max_wt}) {
+        print "Fatal error - specified weight is greater than approved maximum take-off weight\n";
+        exit;
     }
 
-return ($fwd_cg_lim, $aft_cg_lim);
+    my @fwd_wts = split(',',$data{fwd_wts});
+    my @fwd_cgs = split(',',$data{fwd_cgs});
+    my @aft_wts = split(',',$data{aft_wts});
+    my @aft_cgs = split(',',$data{aft_cgs});
+
+    my $ fwd_cg_lim = pull_CG_lim($weight, \@fwd_wts, \@fwd_cgs);
+    my $ aft_cg_lim = pull_CG_lim($weight, \@aft_wts, \@aft_cgs);
+
+    return ($fwd_cg_lim, $aft_cg_lim);
 }
+
+sub pull_CG_lim {
+    # for a given weight and CG line points, return the limit CG
+    # usage: pull_CG_lim($weight, @wts, @cgs)
+    my ($weight, $wts, $cgs) = @_;
+    my ($wt1, $cg1, $wt2, $cg2, $cg_lim, $n) = (0, 0, 0, 0, 0, 0);
+    for $wt2 (@{$wts}) {
+        $cg2 = $$cgs[$n];
+        if ($wt2 == $weight) {
+            $cg_lim = $cg2;
+            last;
+        } elsif ($wt2 >= $weight) {
+            $cg_lim = $cg1 + ($cg2 - $cg1) * ($weight - $wt1) / ($wt2 - $wt1);
+            last;
+            } else {
+                ($wt1, $cg1) = ($wt2, $cg2);
+            }
+        $n = $n + 1;
+        }
+    return $cg_lim;
+    }
