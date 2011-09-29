@@ -304,7 +304,7 @@ if ($manual_date) {$data{date} = $manual_date}
 $data{'purpose'} = Compact_Enum($data{'purpose'});
 
 # Set MTOW based on flt date
-print "Date is $data{date}\n";
+# print "Date is $data{date}\n";
 if ($data{date} gt "2010-04-20\n") {
     # print "Gross weight = 1900 lb\n";
     $TOW_max = "1900";
@@ -524,141 +524,149 @@ print OUTPUT "@working_data\n";
 if (substr($flt_no, 0, 1) == "G") {
     $query = "SELECT test_program.id, flt_tp_list.flt, test, flt_tp_list.sequence, speed, altitude, power, flaps, test_program.remarks, wt, cg, latex, status, risk, tp FROM test_program JOIN (flt_tp_list, aircraft) ON (test_program.id=flt_tp_list.tp_id AND flt_tp_list.aircraft=aircraft.id AND aircraft.registration=$aircraft AND flt_tp_list.flt = \"$flt_no\" ORDER BY flt_tp_list.sequence";
 } else {
-    $query = "SELECT test_program.id, flt_tp_list.flt, test, flt_tp_list.sequence, speed, altitude, power, flaps, test_program.remarks, wt, cg, latex, status, risk, tp FROM test_program JOIN (flt_tp_list, aircraft) ON (test_program.id=flt_tp_list.tp_id AND flt_tp_list.aircraft=aircraft.id AND aircraft.registration=\'$aircraft\' AND flt_tp_list.flt = $flt_no) ORDER BY flt_tp_list.sequence";}
-    print "$query\n";
-    my $sth = $dbh->prepare("$query"); 
-    $sth->execute();
-    while (my $ref = $sth->fetchrow_hashref()) {
+    $query = "SELECT test_program.id, flt_tp_list.flt, test, flt_tp_list.sequence, speed, altitude, power, flaps, test_program.remarks, wt, cg, latex, status, risk, tp FROM test_program JOIN (flt_tp_list, aircraft) ON (test_program.id=flt_tp_list.tp_id AND flt_tp_list.aircraft=aircraft.id AND aircraft.registration=\'$aircraft\' AND flt_tp_list.flt = $flt_no) ORDER BY flt_tp_list.sequence";
+}
+# print "$query\n";
+my $sth = $dbh->prepare("$query"); 
+$sth->execute();
 
-        %tpdata = (
-            test => uc ($ref->{'test'}),
-           speed => $ref->{'speed'},
-        altitude => CommaFormatted($ref->{'altitude'}),
-           power => $ref->{'power'},
-           flaps => $ref->{'flaps'},
-              wt => $ref->{'wt'},
-              cg => $ref->{'cg'},
-              tp => $ref->{'tp'},
-         remarks => $ref->{'remarks'},
-            risk => $ref->{'risk'},
-        );
+# confirm that this flight has test points.
+if ($sth->rows < 1) {
+    print "Fatal error - flight number $flt_no has no test points specified.\n";
+    exit;
+}
+
+while (my $ref = $sth->fetchrow_hashref()) {
+
+    %tpdata = (
+        test => uc ($ref->{'test'}),
+       speed => $ref->{'speed'},
+    altitude => CommaFormatted($ref->{'altitude'}),
+       power => $ref->{'power'},
+       flaps => $ref->{'flaps'},
+          wt => $ref->{'wt'},
+          cg => $ref->{'cg'},
+          tp => $ref->{'tp'},
+     remarks => $ref->{'remarks'},
+        risk => $ref->{'risk'},
+    );
 
 
 
-        # check test point weight and cg requirements against aircraft loading
-        unless ($opt_o) {
-            $die_now += Verfiy_Wt_CG ( $tpdata{wt}, $tpdata{cg}, $tpdata{tp}, $tpdata{test}, $TOW, $TOW_CG );
-        }
+    # check test point weight and cg requirements against aircraft loading
+    unless ($opt_o) {
+        $die_now += Verfiy_Wt_CG ( $tpdata{wt}, $tpdata{cg}, $tpdata{tp}, $tpdata{test}, $TOW, $TOW_CG );
+    }
 
 
-        # put test name in template
-        $tpstart = $tpstart_template;
-        $tpstart =~ s/<<<(\w+)>>>/$tpdata{$1}/g;
+    # put test name in template
+    $tpstart = $tpstart_template;
+    $tpstart =~ s/<<<(\w+)>>>/$tpdata{$1}/g;
 
-        # check to see if speed field contains V + following letters that should be formatted
-        # as a subscript    
-        $tpdata{speed} =~ s/V(\w+)/\$\\mathrm{V_{$1}}\$/g;
+    # check to see if speed field contains V + following letters that should be formatted
+    # as a subscript    
+    $tpdata{speed} =~ s/V(\w+)/\$\\mathrm{V_{$1}}\$/g;
 
-        # if speed is only digits, save digits for later use, and add units
-        $tpdata{speed} =~ s/^(\d+)$/$1 kt/g;
-        $tpdata{speed_digits} = $1;
+    # if speed is only digits, save digits for later use, and add units
+    $tpdata{speed} =~ s/^(\d+)$/$1 kt/g;
+    $tpdata{speed_digits} = $1;
 
-        # if altitude is only digits, add units
-        $tpdata{altitude} =~ s/^(\d+,*\d*)$/$1 ft/g;
+    # if altitude is only digits, add units
+    $tpdata{altitude} =~ s/^(\d+,*\d*)$/$1 ft/g;
 
-        # convert flaps to upper case
-        $tpdata{flaps} = uc($tpdata{flaps});
+    # convert flaps to upper case
+    $tpdata{flaps} = uc($tpdata{flaps});
 
-        # convert power to upper case
-        $tpdata{power} = uc($tpdata{power});
+    # convert power to upper case
+    $tpdata{power} = uc($tpdata{power});
 
-        # check for latex \textdegree in power
-        $tpdata{power} =~ s/\\TEXTDEGREE/\\textdegree/g;
+    # check for latex \textdegree in power
+    $tpdata{power} =~ s/\\TEXTDEGREE/\\textdegree/g;
 
-        # fix "%" in power, as latex sees "%" as a comment
-        # need two backslashes before the "%", as latex needs to get "\%", or it will
-        # be a comment, and perl eats one backslash.
-        $tpdata{power} =~ s/^(\d+)%/$1\\%/g;
+    # fix "%" in power, as latex sees "%" as a comment
+    # need two backslashes before the "%", as latex needs to get "\%", or it will
+    # be a comment, and perl eats one backslash.
+    $tpdata{power} =~ s/^(\d+)%/$1\\%/g;
 
-        if ($ref->{'latex'}) {
-            # Check to see if latex field is just a pointer to a template
-            if ($ref->{'latex'} =~  /QQQ(\w+)WWW/) {
-                $template_home = $test_card_home . "/" . $1 . "/";
-                # see if this test is the same as the last one
-                if ($last_test eq $1 && ($opt_p)) {
-                # same type of test as last time, so don't need to get Procedure again
+    if ($ref->{'latex'}) {
+        # Check to see if latex field is just a pointer to a template
+        if ($ref->{'latex'} =~  /QQQ(\w+)WWW/) {
+            $template_home = $test_card_home . "/" . $1 . "/";
+            # see if this test is the same as the last one
+            if ($last_test eq $1 && ($opt_p)) {
+            # same type of test as last time, so don't need to get Procedure again
+            # get Conditions part of test card, if not a ground test
+                if ($flt_no >= 1) {
+                    $template = $template_home . "conditions.tex";
+                    $ref->{'latex'} = read_file($template);
+                }
+
+                # get data recording part of test card
+                $template = $template_home . "data.tex";
+                $ref->{'latex'} = $ref->{'latex'} . read_file($template);
+            } else {
+                # different type of test from last time, so need to get Procedure and Risk
                 # get Conditions part of test card, if not a ground test
-                    if ($flt_no >= 1) {
-                        $template = $template_home . "conditions.tex";
-                        $ref->{'latex'} = read_file($template);
-                    }
+                if ($flt_no >= 1) {
+                    $template = $template_home . "conditions.tex";
+                    $ref->{'latex'} = read_file($template);
+                }
 
-                    # get data recording part of test card
-                    $template = $template_home . "data.tex";
-                    $ref->{'latex'} = $ref->{'latex'} . read_file($template);
-                } else {
-                    # different type of test from last time, so need to get Procedure and Risk
-                    # get Conditions part of test card, if not a ground test
-                    if ($flt_no >= 1) {
-                        $template = $template_home . "conditions.tex";
-                        $ref->{'latex'} = read_file($template);
-                    }
+                # get Procedure part of test card
+                $template = $template_home . "procedure.tex";
+                $ref->{'latex'} = $ref->{'latex'} . read_file($template);
 
-                    # get Procedure part of test card
-                    $template = $template_home . "procedure.tex";
-                    $ref->{'latex'} = $ref->{'latex'} . read_file($template);
-
-                    $template = $template_home . "risk.tex";
-                    # check to see if risk.tex exists
-                    if (-e $template) {
-                        $ref->{'latex'} = $ref->{'latex'} . read_file($template);
-                    }
-
-                    # get data recording part of test card
-                    $template = $template_home . "data.tex";
+                $template = $template_home . "risk.tex";
+                # check to see if risk.tex exists
+                if (-e $template) {
                     $ref->{'latex'} = $ref->{'latex'} . read_file($template);
                 }
 
-                # store type of test
-                $last_test = $1;
+                # get data recording part of test card
+                $template = $template_home . "data.tex";
+                $ref->{'latex'} = $ref->{'latex'} . read_file($template);
             }
-        } else {
-            # no latex code for this test point
-            $last_test = "";
-            # get Conditions part of test card, if not a ground test
-            if ($flt_no >= 1) {
-                $template = $test_card_home . "/conditions.tex";
-                $ref->{'latex'} = read_file($template);
-            }
-    
-            # add remarks from database to put in Procedure part
-            $ref->{'latex'} = $ref->{'latex'} . "\n" . "\\subsubsection*{Procedure}\n"; 
-            # put any subscripts to V in correct format
-            # $ref->{'remarks'} =~ s/V(\w{1,4}\s)/\$\\mathrm{V_{$1}}\$/g;
-            $ref->{'remarks'} =~ s/(\d+.*\d+\s*)V(\w{1,4})/\$\\mathrm{$1V_{$2}}\$/g;
-    
-            # fix any "%" so they are not seen as latex comments
-            $ref->{'remarks'} =~ s/^(\d+)%/$1\\%/g;
 
-            #convert remarks to LaTeX compactenum
-            $ref->{'remarks'} = Compact_Enum($ref->{'remarks'});
-
-            $ref->{'latex'} = $ref->{'latex'} . "\n" . $ref->{'remarks'} . "\n";
-    
-            # get data recording part of test card
-            $ref->{'latex'} = $ref->{'latex'} . '\\include{Observations}' . "\n";
+            # store type of test
+            $last_test = $1;
+        }
+    } else {
+        # no latex code for this test point
+        $last_test = "";
+        # get Conditions part of test card, if not a ground test
+        if ($flt_no >= 1) {
+            $template = $test_card_home . "/conditions.tex";
+            $ref->{'latex'} = read_file($template);
         }
 
-        # insert test point data in place of the data in the template
-     
-        $ref->{'latex'} =~ s/<<<(\w+)>>>/$tpdata{$1}/g;
-        push (@working_data, "$tpstart");
-        push (@working_data, "$ref->{'latex'}");
-        if ($ref->{'risk'}) {
-            push (@working_data, "\\subsubsection*{Risk Mitigation} $ref->{'risk'}");
-        }
-        # push (@working_data, "RISK");
-        push (@working_data, "$tpend");
+        # add remarks from database to put in Procedure part
+        $ref->{'latex'} = $ref->{'latex'} . "\n" . "\\subsubsection*{Procedure}\n"; 
+        # put any subscripts to V in correct format
+        # $ref->{'remarks'} =~ s/V(\w{1,4}\s)/\$\\mathrm{V_{$1}}\$/g;
+        $ref->{'remarks'} =~ s/(\d+.*\d+\s*)V(\w{1,4})/\$\\mathrm{$1V_{$2}}\$/g;
+
+        # fix any "%" so they are not seen as latex comments
+        $ref->{'remarks'} =~ s/^(\d+)%/$1\\%/g;
+
+        #convert remarks to LaTeX compactenum
+        $ref->{'remarks'} = Compact_Enum($ref->{'remarks'});
+
+        $ref->{'latex'} = $ref->{'latex'} . "\n" . $ref->{'remarks'} . "\n";
+
+        # get data recording part of test card
+        $ref->{'latex'} = $ref->{'latex'} . '\\include{Observations}' . "\n";
+    }
+
+    # insert test point data in place of the data in the template
+ 
+    $ref->{'latex'} =~ s/<<<(\w+)>>>/$tpdata{$1}/g;
+    push (@working_data, "$tpstart");
+    push (@working_data, "$ref->{'latex'}");
+    if ($ref->{'risk'}) {
+        push (@working_data, "\\subsubsection*{Risk Mitigation} $ref->{'risk'}");
+    }
+    # push (@working_data, "RISK");
+    push (@working_data, "$tpend");
 
 }
 $sth->finish();
