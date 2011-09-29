@@ -651,12 +651,12 @@ if (substr($flt_no, 0, 1) == "G") {
 
         # insert test point data in place of the data in the template
      
-         $ref->{'latex'} =~ s/<<<(\w+)>>>/$tpdata{$1}/g;
-         push (@working_data, "$tpstart");
-         push (@working_data, "$ref->{'latex'}");
-         if ($ref->{'risk'}) {
+        $ref->{'latex'} =~ s/<<<(\w+)>>>/$tpdata{$1}/g;
+        push (@working_data, "$tpstart");
+        push (@working_data, "$ref->{'latex'}");
+        if ($ref->{'risk'}) {
             push (@working_data, "\\subsubsection*{Risk Mitigation} $ref->{'risk'}");
-         }
+        }
         # push (@working_data, "RISK");
         push (@working_data, "$tpend");
 
@@ -669,7 +669,7 @@ print OUTPUT "@working_data\n";
 
 # append document end from template file
 open (INPUT , '<' , "$test_card_file_end")
-  or die "Can't open $!";
+    or die "Can't open $!";
   
 @working_data = readline INPUT;
 
@@ -716,166 +716,136 @@ unless ($opt_q) {
 #system "dvips -o $OUTPUT_FILE.ps $OUTPUT_FILE.dvi";
 
 exit;
-###############################################################################
 
-sub CommaFormatted
-# from http://www.web-source.net/web_development/currency_formatting.htm
-{
-        my $delimiter = ','; # replace comma if desired
-        my($n,$d) = split /\./,shift,2;
-        my @a = ();
-        while($n =~ /\d\d\d\d/)
-        {
-                $n =~ s/(\d\d\d)$//;
-                unshift @a,$1;
-        }
-        unshift @a,$n;
-        $n = join $delimiter,@a;
-        $n = "$n\.$d" if $d =~ /\d/;
-        return $n;
-}
-# end of subroutine CommaFormatted
 ###############################################################################
-
-sub FormatDate
-# convert MySQL formatted date to human readable format.
-# if date is blank, add a LaTeX box to hand write the date
-# in later
-{
-  $_[0] =~ /(\d+)-(\d+)-(\d+)/;
-  my $year = $1;
-  my $month = $2;
-  my $day = $3;
-  
-  if ($month == "1") {
-    $month = "Jan";
-  } else {
-    if ($month == "2") {
-      $month = "Feb";
-    } else {
-      if ($month == "3") {
-        $month = "Mar";
-      } else {
-        if ($month == "4") {
-          $month = "Apr";
-        } else {
-          if ($month == "5") {
-            $month = "May";
-          } else {
-            if ($month == "6") {
-              $month = "Jun";
-            } else {
-             if ($month == "7") {
-               $month = "Jul";
-              } else {
-                if ($month == "8") {
-                  $month = "Aug";
-                } else {
-                  if ($month == "9") {
-                    $month = "Sep";
-                  } else {
-                    if ($month == "10") {
-                      $month = "Oct";
-                    } else {
-                      if ($month == "11") {
-                        $month = "Nov";
-                      } else {
-                        if ($month == "12") {
-                          $month = "Dec";
-                        } else {
-                          return "\\begin{boxedminipage}{0.75 in}\\textcolor{white}{gl}\\end{boxedminipage}";
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
+sub CommaFormatted {
+    # from http://www.web-source.net/web_development/currency_formatting.htm
+    my $delimiter = ','; # replace comma if desired
+    my($n,$d) = split /\./,shift,2;
+    my @a = ();
+    while($n =~ /\d\d\d\d/) {
+        $n =~ s/(\d\d\d)$//;
+        unshift @a,$1;
     }
-  }
+    unshift @a,$n;
+    $n = join $delimiter,@a;
+    $n = "$n\.$d" if $d =~ /\d/;
+    return $n;
+}
 
+###############################################################################
+sub FormatDate {
+    # convert MySQL formatted date to human readable format.
+    # if date is blank, add a LaTeX box to hand write the date in later
+    $_[0] =~ /(\d+)-(\d+)-(\d+)/;
+    my $year = $1;
+    my $month = $2;
+    my $day = $3;
 
-
+    if ($month == "1") {
+        $month = "Jan";
+    } elsif ($month == "2") {
+        $month = "Feb";
+    } elsif ($month == "3") {
+        $month = "Mar";
+    } elsif ($month == "4") {
+        $month = "Apr";
+    } elsif ($month == "5") {
+        $month = "May";
+    } elsif ($month == "6") {
+        $month = "Jun";
+    } elsif ($month == "7") {
+        $month = "Jul";
+    } elsif ($month == "8") {
+        $month = "Aug";
+    } elsif ($month == "9") {
+        $month = "Sep";
+    } elsif ($month == "10") {
+        $month = "Oct";
+    } elsif ($month == "11") {
+        $month = "Nov";
+    } elsif ($month == "12") {
+        $month = "Dec";
+    } else {
+        return "\\begin{boxedminipage}{0.75 in}\\textcolor{white}{gl}\\end{boxedminipage}";
+    }
 
   my $formatteddate = "$day $month $year";
   return $formatteddate;
 }
 
 ###############################################################################
-sub Verfiy_Wt_CG
-# check to see if test point weight and CG callouts are compatible with the 
-# aircraft weight and CG
-#
-# useage Verify_Wt_CG (test_pt_wt test_pt_CG test_pt_number aircraft_wt aircraft_CG)
+sub Verfiy_Wt_CG {
+    # check to see if test point weight and CG callouts are compatible with the 
+    # aircraft weight and CG
+    #
+    # useage Verify_Wt_CG (test_pt_wt, test_pt_CG, test_pt_number, aircraft_wt,
+    # aircraft_CG)
 
-{
-  my $error = "0";
-  if ($_[0] eq "hvy" & $TOW < $hvy_min) {
-    print "tp $_[2] $_[3] calls for heavy weight but aircraft weight is less than $hvy_min lb.\n";
-    $error ++;
-  }
-  
-  if ($_[0] eq "max" & $TOW < $max_min) {
-    print "tp $_[2] $_[3] calls for max weight but aircraft weight is less than $max_min lb.\n";
-    $error ++;
-  }
-  
-  if ($_[0] eq "med" & $TOW > $med_max) {
-    print "tp $_[2] $_[3] calls for medium weight but aircraft weight is greater than $med_max lb.\n";
-    $error ++;
-  }
+    my $error = "0";
+    if ($_[0] eq "hvy" & $TOW < $hvy_min) {
+        print "tp $_[2] $_[3] calls for heavy weight but aircraft weight is less than $hvy_min lb.\n";
+        $error ++;
+    }
 
-  if ($_[0] eq "med" & $TOW < $med_min) {
-    print "tp $_[2] $_[3] calls for medium weight but aircraft weight is less than $med_min lb.\n";
-    $error ++;
-  }
+    if ($_[0] eq "max" & $TOW < $max_min) {
+        print "tp $_[2] $_[3] calls for max weight but aircraft weight is less than $max_min lb.\n";
+        $error ++;
+    }
 
-  if ($_[0] eq "lgt" & $TOW > $lt_max) {
-    print "tp $_[2] $_[3] calls for light weight but aircraft weight is greater than $lt_max lb.\n";
-    $error ++;
-  }
+    if ($_[0] eq "med" & $TOW > $med_max) {
+        print "tp $_[2] $_[3] calls for medium weight but aircraft weight is greater than $med_max lb.\n";
+        $error ++;
+    }
 
-  if ($_[1] eq "fwd" & $TOW_CG > $fwd_cg_max) {
-    print "tp $_[2] $_[3] calls for forward CG but aircraft CG is too far aft.\n";
-    $error ++;
-  }
+    if ($_[0] eq "med" & $TOW < $med_min) {
+        print "tp $_[2] $_[3] calls for medium weight but aircraft weight is less than $med_min lb.\n";
+        $error ++;
+    }
 
-  if ($_[1] eq "mid" & $TOW_CG < $mid_cg_min) {
-    print "tp $_[2] $_[3] calls for mid CG but aircraft CG is too far forward.\n";
-    $error ++;
-  }
+    if ($_[0] eq "lgt" & $TOW > $lt_max) {
+        print "tp $_[2] $_[3] calls for light weight but aircraft weight is greater than $lt_max lb.\n";
+        $error ++;
+    }
 
-  if ($_[1] eq "mid" & $TOW_CG > $mid_cg_max) {
-    print "tp $_[2] $_[3] calls for mid CG but aircraft CG is too far aft.\n";
-    $error ++;
-  }
+    if ($_[1] eq "fwd" & $TOW_CG > $fwd_cg_max) {
+        print "tp $_[2] $_[3] calls for forward CG but aircraft CG is too far aft.\n";
+        $error ++;
+    }
 
-  if ($_[1] eq "aft" & $TOW_CG < $aft_cg_min) {
-    print "tp $_[2] $_[3] calls for aft CG but aircraft CG is too far forward.\n";
-    $error ++;
-  }
+    if ($_[1] eq "mid" & $TOW_CG < $mid_cg_min) {
+        print "tp $_[2] $_[3] calls for mid CG but aircraft CG is too far forward.\n";
+        $error ++;
+    }
 
-  if ($_[1] eq "aero_aft" & $TOW_CG < $aero_cg_aft_min) {
-    print "tp $_[2] $_[3] calls for aerobatic aft CG but aircraft CG is too far forward.\n";
-    $error ++;
-  }
+    if ($_[1] eq "mid" & $TOW_CG > $mid_cg_max) {
+        print "tp $_[2] $_[3] calls for mid CG but aircraft CG is too far aft.\n";
+        $error ++;
+    }
 
-  if ($_[1] eq "aero_aft" & $TOW_CG > $aero_cg_aft_max) {
-    print "tp $_[2] $_[3] calls for aerobatic aft CG but aircraft CG is too far aft.\n";
-    $error ++;
-  }
+    if ($_[1] eq "aft" & $TOW_CG < $aft_cg_min) {
+        print "tp $_[2] $_[3] calls for aft CG but aircraft CG is too far forward.\n";
+        $error ++;
+    }
 
-  return "$error";
+    if ($_[1] eq "aero_aft" & $TOW_CG < $aero_cg_aft_min) {
+        print "tp $_[2] $_[3] calls for aerobatic aft CG but aircraft CG is too far forward.\n";
+        $error ++;
+    }
+
+    if ($_[1] eq "aero_aft" & $TOW_CG > $aero_cg_aft_max) {
+        print "tp $_[2] $_[3] calls for aerobatic aft CG but aircraft CG is too far aft.\n";
+        $error ++;
+    }
+
+    return "$error";
 }
 
 ###############################################################################
-sub Compact_Enum
-# take a block of text, and create a LaTeX \compactenum structure with each row 
-# being a new \item.
-{
+sub Compact_Enum {
+    # take a block of text, and create a LaTeX \compactenum structure with each
+    # row being a new \item.
+
     my $Compact_Enum_input = $_[0];
     my @temp_Compact_enum = "";
     my @temp_output = "";
@@ -894,9 +864,10 @@ sub Compact_Enum
     return $Output;
 }
 
-# read configuration file, from:
-# http://www.motreja.com/ankur/examplesinperl/parsing_config_files.htm
+###############################################################################
 sub parse_config_file {
+    # read configuration file, from:
+    # http://www.motreja.com/ankur/examplesinperl/parsing_config_files.htm
 
     my ($config_line, $Name, $Value, $Config);
 
@@ -912,7 +883,7 @@ sub parse_config_file {
         chop ($config_line);          # Get rid of the trailling \n
         $config_line =~ s/^\s*//;     # Remove spaces at the start of the line
         $config_line =~ s/\s*$//;     # Remove spaces at the end of the line
-        if ( ($config_line !~ /^#/) && ($config_line ne "") ){    # Ignore lines starting with # and blank lines
+        if ( ($config_line !~ /^#/) && ($config_line ne "") ) {    # Ignore lines starting with # and blank lines
             ($Name, $Value) = split (/=/, $config_line);          # Split each line into name value pairs
             $Name =~ s/\s*$//;     # Remove spaces at the end of the Name
             $Value =~ s/^\s*//;     # Remove spaces at the start of the Value
