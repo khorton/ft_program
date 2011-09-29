@@ -276,6 +276,13 @@ if (substr($flt_no, 0, 1) == "G") {
 }
 $sth->execute();
 
+# confirm that this flight appears in the flight table.
+if ($sth->rows < 1) {
+    print "Fatal error - flight number $flt_no does not appear in the flight table in the database.\n";
+    exit;
+}
+
+
 while (my $ref = $sth->fetchrow_hashref()) {
     %data = (
                      date => $ref->{'date'},
@@ -522,11 +529,12 @@ print OUTPUT "@working_data\n";
 
 # Pull test points from the test_program table.
 if (substr($flt_no, 0, 1) == "G") {
-    $query = "SELECT test_program.id, flt_tp_list.flt, test, flt_tp_list.sequence, speed, altitude, power, flaps, test_program.remarks, wt, cg, latex, status, risk, tp FROM test_program JOIN (flt_tp_list, aircraft) ON (test_program.id=flt_tp_list.tp_id AND flt_tp_list.aircraft=aircraft.id AND aircraft.registration=$aircraft AND flt_tp_list.flt = \"$flt_no\" ORDER BY flt_tp_list.sequence";
+    # $query = "SELECT test_program.id, flt_tp_list.flt, test, flt_tp_list.sequence, speed, altitude, power, flaps, test_program.remarks, wt, cg, latex, status, risk, tp FROM test_program JOIN (flt_tp_list, aircraft) ON (test_program.id=flt_tp_list.tp_id AND flt_tp_list.aircraft=aircraft.id AND aircraft.registration=$aircraft AND flt_tp_list.flt = \"$flt_no\" ORDER BY flt_tp_list.sequence";
+    $query = "SELECT test_program.id, flt_tp_list.flt, test, flt_tp_list.sequence, speed, altitude, power, flaps, test_program.remarks, wt, cg, latex, status, risk, tp FROM test_program JOIN (flt_tp_list, aircraft) ON (test_program.id=flt_tp_list.tp_id AND flt_tp_list.aircraft=aircraft.id AND aircraft.registration=\'$aircraft\' AND flt like \"$flt_no\") ORDER BY flt_tp_list.sequence";
 } else {
     $query = "SELECT test_program.id, flt_tp_list.flt, test, flt_tp_list.sequence, speed, altitude, power, flaps, test_program.remarks, wt, cg, latex, status, risk, tp FROM test_program JOIN (flt_tp_list, aircraft) ON (test_program.id=flt_tp_list.tp_id AND flt_tp_list.aircraft=aircraft.id AND aircraft.registration=\'$aircraft\' AND flt_tp_list.flt = $flt_no) ORDER BY flt_tp_list.sequence";
 }
-# print "$query\n";
+print "$query\n";
 my $sth = $dbh->prepare("$query"); 
 $sth->execute();
 
