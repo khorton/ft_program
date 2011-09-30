@@ -137,12 +137,6 @@ my $last_test = "";             # name of last test, to see if the next one is t
 my $template_home = "";         # location of template files for the current test point
 my $empty_wt = "";
 my $empty_moment = "";
-# my $pilot_seat_arm = "91.78";
-my $pax_seat_arm = "119.12";
-my $baggage1_arm = "58.51";
-my $baggage2_arm = "138.00";
-my $baggage2_arm = "152.91";
-# my $fuel_arm = "";
 my $ZFW = "";
 my $ZFW_moment = "";
 my $ZFW_CG = "";
@@ -279,9 +273,9 @@ if ($sth->rows < 1) {
                  aft_cgs => $ref->{'aft_cgs'},
                pilot_seat_arm => $ref->{'pilot_seat_arm'},
                  pax_seat_arm => $ref->{'pax_seat_arm'},
-            baggage1_arm => $ref->{'baggage1_arm'},
-            baggage2_arm => $ref->{'baggage2_arm'},
-            baggage3_arm => $ref->{'baggage3_arm'},
+            baggage1_arm => CommaFormatted(sprintf("%.2f",$ref->{'baggage1_arm'})),
+            baggage2_arm => CommaFormatted(sprintf("%.2f",$ref->{'baggage2_arm'})),
+            baggage3_arm => CommaFormatted(sprintf("%.2f",$ref->{'baggage3_arm'})),
                 fuel_arm => $ref->{'fuel_arm'}
         );
         # $TOW_max = $data{TOW_max};
@@ -326,9 +320,9 @@ while (my $ref = $sth->fetchrow_hashref()) {
                    flt_no => $flt_no,
                  pilot_seat_wt => $ref->{'pilot_seat_wt'},
              pax_seat_wt => $ref->{'pax_seat_wt'},
-           fwd_baggage_wt => $ref->{'fwd_baggage_wt'},
-          rear_baggage_wt => $ref->{'rear_baggage_wt'},
-    rear_baggage_shelf_wt => $ref->{'rear_baggage_shelf_wt'},
+           baggage1_wt => $ref->{'baggage1_wt'},
+          baggage2_wt => $ref->{'baggage2_wt'},
+    baggage3_wt => $ref->{'baggage3_wt'},
                   fuel_wt => $ref->{'fuel_wt'},
               ballast1_wt => $ref->{'ballast1_wt'},
              ballast1_arm => $ref->{'ballast1_arm'},
@@ -439,9 +433,9 @@ if ($flt_no >= 1) {
     $ZFW =          $empty_wt 
                 + $data{pilot_seat_wt} 
                 + $data{pax_seat_wt} 
-                + $data{fwd_baggage_wt} 
-                + $data{rear_baggage_wt} 
-                + $data{rear_baggage_shelf_wt} 
+                + $data{baggage1_wt} 
+                + $data{baggage2_wt} 
+                + $data{baggage3_wt} 
                 + $data{ballast1_wt} 
                 + $data{ballast2_wt};
 
@@ -449,8 +443,8 @@ if ($flt_no >= 1) {
                 + $data{pilot_seat_wt} * $data{pilot_seat_arm}
                 + $data{pax_seat_wt} * $data{pax_seat_arm}
                 + $data{baggage1_wt} * $data{baggage1_arm}
-                + $data{rear_baggage_wt} * $baggage2_arm
-                + $data{rear_baggage_shelf_wt} * $baggage2_arm
+                + $data{baggage2_wt} * $data{baggage2_arm}
+                + $data{baggage3_wt} * $data{baggage3_arm}
                 + $data{ballast1_wt} * $data{ballast1_arm}
                 + $data{ballast2_wt} * $data{ballast2_arm};
 
@@ -474,12 +468,12 @@ if ($flt_no >= 1) {
     $data{pilot_seat_moment} = CommaFormatted(sprintf("%.2f",$data{pilot_seat_arm} * $data{pilot_seat_wt}));
     # $data{pax_seat_arm} = $pax_seat_arm;
     $data{pax_seat_moment} = CommaFormatted(sprintf("%.2f",$data{pax_seat_arm} * $data{pax_seat_wt}));
-    # $data{fwd_baggage_arm} = $baggage1_arm;
-    $data{fwd_baggage_moment} = CommaFormatted(sprintf("%.2f",$data{baggage1_arm} * $data{fwd_baggage_wt}));
-    # $data{rear_baggage_arm} = $baggage2_arm;
-    $data{rear_baggage_moment} = CommaFormatted(sprintf("%.2f",$data{baggage2_arm} * $data{rear_baggage_wt}));
-    # $data{rear_baggage_shelf_arm} = $baggage2_arm;
-    $data{rear_baggage_shelf_moment} = CommaFormatted(sprintf("%.2f",$data{baggage3_arm} * $data{baggage3_wt}));
+    # $data{baggage1_arm} = $baggage1_arm;
+    $data{baggage1_moment} = CommaFormatted(sprintf("%.2f",$data{baggage1_arm} * $data{baggage1_wt}));
+    # $data{baggage2_arm} = $baggage2_arm;
+    $data{baggage2_moment} = CommaFormatted(sprintf("%.2f",$data{baggage2_arm} * $data{baggage2_wt}));
+    # $data{baggage3_arm} = $baggage2_arm;
+    $data{baggage3_moment} = CommaFormatted(sprintf("%.2f",$data{baggage3_arm} * $data{baggage3_wt}));
     $data{ballast1_moment} = CommaFormatted(sprintf("%.2f",$data{ballast1_arm} * $data{ballast1_wt}));
     $data{ballast2_moment} = CommaFormatted(sprintf("%.2f",$data{ballast2_arm} * $data{ballast2_wt}));
     $data{zfw} = CommaFormatted(sprintf("%d", $ZFW));
