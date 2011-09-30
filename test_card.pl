@@ -80,7 +80,6 @@
 #            all aircraft.  aircraft field in all other tables, except the
 #            test_program table, ties each record to a specific aircraft.
 
-
 use strict;
 use DBI;
 use File::Slurp;
@@ -131,24 +130,25 @@ my $manual_date = "";           # Manually entered date, to override date in dat
 my $OUTPUT_FILE = "";           # File name for LaTeX test card file to be created.
 my @working_data = "";
 my %data = "";                  # hash of info for each flight from the flights table
+my %data2 = "";                  # hash of info for each flight from the flights table
 my %tpdata = "";                # speed, altitude, power, flaps, etc for each test point
 my $template = "";              # path to relevant test point template file
 my $last_test = "";             # name of last test, to see if the next one is the same type
 my $template_home = "";         # location of template files for the current test point
 my $empty_wt = "";
 my $empty_moment = "";
-my $pilot_arm = "91.78";
-my $rear_seat_arm = "119.12";
-my $fwd_baggage_arm = "58.51";
-my $rear_baggage_arm = "138.00";
-my $rear_baggage_shelf_arm = "152.91";
-my $fuel_arm = "80.00";
+# my $pilot_seat_arm = "91.78";
+my $pax_seat_arm = "119.12";
+my $baggage1_arm = "58.51";
+my $baggage2_arm = "138.00";
+my $baggage2_arm = "152.91";
+# my $fuel_arm = "";
 my $ZFW = "";
 my $ZFW_moment = "";
 my $ZFW_CG = "";
 my $TOW = "";
 my $TOW_CG = "";
-my $TOW_max = "1800";
+my $TOW_max = "";
 my $fwd_cg_limit = "78.7";
 my $aft_cg_limit = "86.82";
 my $aerobatic_aft_cg_limit = "85.3";
@@ -175,7 +175,6 @@ my @temp_purpose = "";
 getopts("hopqf:d:a:",\%options);
 $flt_no = $options{f};
 $opt_o = $options{o};
-
 
 # read config file
 parse_config_file ($config_file, \%Config);
@@ -260,6 +259,7 @@ my $dbh = DBI->connect("DBI:mysql:database=$database;host=localhost",
                        {'RaiseError' => 1});
 
 # check that the specified aircraft exists
+# if aircraft exists, pull weight and CG range limits from databases
 $sth = $dbh->prepare("SELECT * FROM aircraft WHERE registration = \'$aircraft\'"); 
 $sth->execute();
 if ($sth->rows < 1) {
@@ -268,6 +268,39 @@ if ($sth->rows < 1) {
 } elsif ($sth->rows > 1) {
     print "Fatal Error - Aircraft $aircraft appears more than once in the database.\n";
     exit;
+} else {
+    while (my $ref = $sth->fetchrow_hashref()) {
+        %data = (
+                 TOW_max => $ref->{'max_wt'},
+                 TOW_min => $ref->{'min_wt'},
+                 fwd_wts => $ref->{'fwd_wts'},
+                 fwd_cgs => $ref->{'fwd_cgs'},
+                 aft_wts => $ref->{'aft_wts'},
+                 aft_cgs => $ref->{'aft_cgs'},
+               pilot_seat_arm => $ref->{'pilot_seat_arm'},
+                 pax_seat_arm => $ref->{'pax_seat_arm'},
+            baggage1_arm => $ref->{'baggage1_arm'},
+            baggage2_arm => $ref->{'baggage2_arm'},
+            baggage3_arm => $ref->{'baggage3_arm'},
+                fuel_arm => $ref->{'fuel_arm'}
+        );
+        # $TOW_max = $data{TOW_max};
+        # $fuel_arm = $data{fuel_arm};
+    }
+    # $TOW_max = data{TOW_max};
+    my $fwd_cg_limit = "78.7";
+    my $aft_cg_limit = "86.82";
+    my $aerobatic_aft_cg_limit = "85.3";
+    my $max_min = "1782";           # min end of maximum weight band
+    my $hvy_min = "1750";           # min end of heavy weight band
+    my $med_max = "1650";           # max end of med weight band
+    my $med_min = "1500";           # min end of med weight band
+    my $lt_max = "1450";            # max end of light weight band
+    my $fwd_cg_max = "79.27";       # aft end of fwd cg band (7% of CG range behind fwd limit)
+    my $mid_cg_min = "80.73";       # fwd end of mid cg band (25% of CG range behind fwd limit)
+    my $mid_cg_max = "84.79";       # aft end of mid cg band (75% of CG range behind fwd limit)
+    my $aft_cg_min = "86.25";       # fwd end of aft cg band (93% of CG range behind fwd limit)
+    
 }
 
 # Pull info from flight table.
@@ -284,16 +317,15 @@ if ($sth->rows < 1) {
     exit;
 }
 
-
 while (my $ref = $sth->fetchrow_hashref()) {
-    %data = (
+    %data2 = (
                      date => $ref->{'date'},
                     pilot => $ref->{'pilot'},
                       fte => $ref->{'fte'},
                   purpose => $ref->{'purpose'},
                    flt_no => $flt_no,
-                 pilot_wt => $ref->{'pilot_wt'},
-             rear_seat_wt => $ref->{'rear_seat_wt'},
+                 pilot_seat_wt => $ref->{'pilot_seat_wt'},
+             pax_seat_wt => $ref->{'pax_seat_wt'},
            fwd_baggage_wt => $ref->{'fwd_baggage_wt'},
           rear_baggage_wt => $ref->{'rear_baggage_wt'},
     rear_baggage_shelf_wt => $ref->{'rear_baggage_shelf_wt'},
@@ -306,7 +338,12 @@ while (my $ref = $sth->fetchrow_hashref()) {
                      type => $ref->{'type'}
     );
 }
+
+%data = (%data, %data2);
+
 $sth->finish();
+print "pilot arm = $data{pilot_seat_arm}\n";
+print "fuel arm = $data{fuel_arm}\n";
 
 if ($manual_date) {$data{date} = $manual_date}
 
@@ -337,7 +374,6 @@ while (my $ref = $sth->fetchrow_hashref()) {
     $data{limitations} = Compact_Enum($data{limitations});
 }
 $sth->finish();
-
 
 ###############################################################################
 # use different templates for start of test card, depending on whether we have
@@ -401,8 +437,8 @@ if ($flt_no >= 1) {
 
     # calculate zero fuel weight and cg
     $ZFW =          $empty_wt 
-                + $data{pilot_wt} 
-                + $data{rear_seat_wt} 
+                + $data{pilot_seat_wt} 
+                + $data{pax_seat_wt} 
                 + $data{fwd_baggage_wt} 
                 + $data{rear_baggage_wt} 
                 + $data{rear_baggage_shelf_wt} 
@@ -410,11 +446,11 @@ if ($flt_no >= 1) {
                 + $data{ballast2_wt};
 
     $ZFW_moment = $empty_moment
-                + $data{pilot_wt} * $pilot_arm
-                + $data{rear_seat_wt} * $rear_seat_arm
-                + $data{fwd_baggage_wt} * $fwd_baggage_arm
-                + $data{rear_baggage_wt} * $rear_baggage_arm
-                + $data{rear_baggage_shelf_wt} * $rear_baggage_shelf_arm
+                + $data{pilot_seat_wt} * $data{pilot_seat_arm}
+                + $data{pax_seat_wt} * $data{pax_seat_arm}
+                + $data{baggage1_wt} * $data{baggage1_arm}
+                + $data{rear_baggage_wt} * $baggage2_arm
+                + $data{rear_baggage_shelf_wt} * $baggage2_arm
                 + $data{ballast1_wt} * $data{ballast1_arm}
                 + $data{ballast2_wt} * $data{ballast2_arm};
 
@@ -422,7 +458,7 @@ if ($flt_no >= 1) {
 
     # add fuel weight and moment to get take-off weight and CG
     $TOW = $ZFW + $data{fuel_wt};
-    $TOW_CG = ($ZFW_moment + $data{fuel_wt} * $fuel_arm) / $TOW;
+    $TOW_CG = ($ZFW_moment + $data{fuel_wt} * $data{fuel_arm}) / $TOW;
 
     open (WB_DATA , '>' , "$wb_chart_data_file_name")
         or die "Can't open weight and balance data file: $!";
@@ -430,28 +466,27 @@ if ($flt_no >= 1) {
     # print info header
     print WB_DATA "# Zero Fuel Weight CG and Take-off CG\n#inches_aft_of_datum lb\n";
 
-
     # print weight and balance data to a file to feed to gnuplot
     print WB_DATA "$ZFW_CG $ZFW\n$TOW_CG $TOW\n";
 
-
-    $data{pilot_arm} = $pilot_arm;
-    $data{pilot_moment} = CommaFormatted(sprintf("%.2f",$pilot_arm * $data{pilot_wt}));
-    $data{rear_seat_arm} = $rear_seat_arm;
-    $data{rear_seat_moment} = CommaFormatted(sprintf("%.2f",$rear_seat_arm * $data{rear_seat_wt}));
-    $data{fwd_baggage_arm} = $fwd_baggage_arm;
-    $data{fwd_baggage_moment} = CommaFormatted(sprintf("%.2f",$fwd_baggage_arm * $data{fwd_baggage_wt}));
-    $data{rear_baggage_arm} = $rear_baggage_arm;
-    $data{rear_baggage_moment} = CommaFormatted(sprintf("%.2f",$rear_baggage_arm * $data{rear_baggage_wt}));
-    $data{rear_baggage_shelf_arm} = $rear_baggage_shelf_arm;
-    $data{rear_baggage_shelf_moment} = CommaFormatted(sprintf("%.2f",$rear_baggage_shelf_arm * $data{rear_baggage_shelf_wt}));
+    # $data{pilot_seat_arm} = $data{pilot_seat_arm};
+    # print "pilot arm3 = $data{pilot_seat_arm}\n";
+    $data{pilot_seat_moment} = CommaFormatted(sprintf("%.2f",$data{pilot_seat_arm} * $data{pilot_seat_wt}));
+    # $data{pax_seat_arm} = $pax_seat_arm;
+    $data{pax_seat_moment} = CommaFormatted(sprintf("%.2f",$data{pax_seat_arm} * $data{pax_seat_wt}));
+    # $data{fwd_baggage_arm} = $baggage1_arm;
+    $data{fwd_baggage_moment} = CommaFormatted(sprintf("%.2f",$data{baggage1_arm} * $data{fwd_baggage_wt}));
+    # $data{rear_baggage_arm} = $baggage2_arm;
+    $data{rear_baggage_moment} = CommaFormatted(sprintf("%.2f",$data{baggage2_arm} * $data{rear_baggage_wt}));
+    # $data{rear_baggage_shelf_arm} = $baggage2_arm;
+    $data{rear_baggage_shelf_moment} = CommaFormatted(sprintf("%.2f",$data{baggage3_arm} * $data{baggage3_wt}));
     $data{ballast1_moment} = CommaFormatted(sprintf("%.2f",$data{ballast1_arm} * $data{ballast1_wt}));
     $data{ballast2_moment} = CommaFormatted(sprintf("%.2f",$data{ballast2_arm} * $data{ballast2_wt}));
     $data{zfw} = CommaFormatted(sprintf("%d", $ZFW));
     $data{zfw_cg} = sprintf("%.2f",$ZFW_CG);
     $data{zfw_moment} = CommaFormatted(sprintf("%.2f",$ZFW_CG * $ZFW));
-    $data{fuel_arm} = $fuel_arm;
-    $data{fuel_moment} = CommaFormatted(sprintf("%.2f",$fuel_arm * $data{fuel_wt}));
+    # $data{fuel_arm} = $fuel_arm;
+    $data{fuel_moment} = CommaFormatted(sprintf("%.2f",$data{fuel_arm} * $data{fuel_wt}));
     $data{to_wt} = CommaFormatted(sprintf ("%d",$TOW));
     $data{to_cg} = sprintf ("%.2f",$TOW_CG);
     $data{to_moment} = CommaFormatted(sprintf("%.2f",$TOW * $TOW_CG));
@@ -518,8 +553,15 @@ if ($flt_no >= 1) {
 }
 ###############################################################################
 
-
 # Replace data in test card start file with data from the database.
+### DEBUG ###
+my @keys = keys %data;
+my @values = values %data;
+while (@keys) {
+    print pop(@keys), '=', pop(@values), "\n";
+}
+# exit;
+
 foreach (@working_data) {
     $_ =~ s/<<<(\w+)>>>/$data{$1}/g;
 }
@@ -561,13 +603,10 @@ while (my $ref = $sth->fetchrow_hashref()) {
         risk => $ref->{'risk'},
     );
 
-
-
     # check test point weight and cg requirements against aircraft loading
     unless ($opt_o) {
         $die_now += Verfiy_Wt_CG ( $tpdata{wt}, $tpdata{cg}, $tpdata{tp}, $tpdata{test}, $TOW, $TOW_CG );
     }
-
 
     # put test name in template
     $tpstart = $tpstart_template;
@@ -681,7 +720,6 @@ while (my $ref = $sth->fetchrow_hashref()) {
 }
 $sth->finish();
 
-
 # write LaTeX stuff for test points from database
 print OUTPUT "@working_data\n";
 
@@ -704,7 +742,6 @@ if ($die_now > 0) {
 ***There are $die_now weight or CG problems.***
 run "test_card.pl -f $flt_no -o" to override the weight and CG errors.\n);
 }
-
 
 # 1 page per sheet option
 # system "pdflatex -output-directory $test_card_home $OUTPUT_FILE";
@@ -910,5 +947,71 @@ sub parse_config_file {
     }
 
     close(CONFIG);
-
 }
+
+sub CG_limits {
+    # for a given database handle, aircaft and weight, return forward and aft CG limits
+    # also check whether specified weight is inside approved limits
+    
+    # usage sub($database_handle, $registration, $weight)    
+    # returns ($fwd_limit, $aft_limit)
+    
+    my $database_handle = $_[0];
+    my $registration = $_[1];
+    my $weight = $_[2];
+
+    $sth = $database_handle->prepare("SELECT * FROM aircraft WHERE registration = \'$registration\'"); 
+    $sth->execute();
+    while (my $ref = $sth->fetchrow_hashref()) {
+    %data = (
+              min_wt => $ref->{'min_wt'},
+              max_wt => $ref->{'max_wt'},
+             fwd_wts => $ref->{'fwd_wts'},
+             fwd_cgs => $ref->{'fwd_cgs'},
+             aft_wts => $ref->{'aft_wts'},
+             aft_cgs => $ref->{'aft_cgs'}
+                                         );
+    }
+    $sth->finish();
+
+    if ($weight < $data{min_wt}) {
+        print "Fatal error - specified weight is less than approved minimum flight weight\n";
+        exit;
+    }
+
+    if ($weight > $data{max_wt}) {
+        print "Fatal error - specified weight is greater than approved maximum take-off weight\n";
+        exit;
+    }
+
+    my @fwd_wts = split(',',$data{fwd_wts});
+    my @fwd_cgs = split(',',$data{fwd_cgs});
+    my @aft_wts = split(',',$data{aft_wts});
+    my @aft_cgs = split(',',$data{aft_cgs});
+
+    my $ fwd_cg_lim = pull_CG_lim($weight, \@fwd_wts, \@fwd_cgs);
+    my $ aft_cg_lim = pull_CG_lim($weight, \@aft_wts, \@aft_cgs);
+
+    return ($fwd_cg_lim, $aft_cg_lim);
+}
+
+sub pull_CG_lim {
+    # for a given weight and CG line points, return the limit CG
+    # usage: pull_CG_lim($weight, @wts, @cgs)
+    my ($weight, $wts, $cgs) = @_;
+    my ($wt1, $cg1, $wt2, $cg2, $cg_lim, $n) = (0, 0, 0, 0, 0, 0);
+    for $wt2 (@{$wts}) {
+        $cg2 = $$cgs[$n];
+        if ($wt2 == $weight) {
+            $cg_lim = $cg2;
+            last;
+        } elsif ($wt2 >= $weight) {
+            $cg_lim = $cg1 + ($cg2 - $cg1) * ($weight - $wt1) / ($wt2 - $wt1);
+            last;
+            } else {
+                ($wt1, $cg1) = ($wt2, $cg2);
+            }
+        $n = $n + 1;
+        }
+    return $cg_lim;
+    }
