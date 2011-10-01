@@ -9,17 +9,17 @@ database_user = ft
 database_password = ft
 
 ### CG tolerances (% of envelope) ###
-# fwd- = percentage of full envelope that a point specified as fwd CG may be forward of the fwd limit
-fwd- = -1
+# fwd_min = percentage of full envelope that a point specified as fwd CG may be forward of the fwd limit
+fwd_min = -1
 
-# fwd+ = percentage of full envelope that a point specified as fwd CG may be aft of the fwd limit
-fwd+ = 7
+# fwd_max = percentage of full envelope that a point specified as fwd CG may be aft of the fwd limit
+fwd_max = 7
 
 # mid = percentage of full envelope that a point specified as mid CG may be forward or aft of the mid point
 mid = 10
 
-# aft- = percentage of full envelope that a point specified as aft CG may be forward of the aft limit
-aft- = -7
+# aft_min = percentage of full envelope that a point specified as aft CG may be forward of the aft limit
+aft_min = -7
 
-# aft+ = percentage of full envelope that a point specified as aft CG may be aft of the aft limit
-aft+ = 1
+# aft_max = percentage of full envelope that a point specified as aft CG may be aft of the aft limit
+aft_max = 1

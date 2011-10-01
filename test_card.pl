@@ -69,6 +69,8 @@
 #            aircraft to have different values.
 #
 #         8. Support non-rectangular weight/CG envelopes.
+#
+#         9. Sort out checks of take-off wt & CG around line 490.
 
 #=============================================================================
 # Done:   5. 20090227 - reworked to add new table that holds list of test 
@@ -143,8 +145,8 @@ my $ZFW_CG = "";
 my $TOW = "";
 my $TOW_CG = "";
 my $TOW_max = "";
-my $fwd_cg_limit = "78.7";
-my $aft_cg_limit = "86.82";
+my $fwd_cg_limit = "";
+my $aft_cg_limit = "";
 my $aerobatic_aft_cg_limit = "85.3";
 my $max_min = "1782";           # min end of maximum weight band
 my $hvy_min = "1750";           # min end of heavy weight band
@@ -598,9 +600,9 @@ while (my $ref = $sth->fetchrow_hashref()) {
     );
 
     # check test point weight and cg requirements against aircraft loading
-    unless ($opt_o) {
-        $die_now += Verfiy_Wt_CG ( $tpdata{wt}, $tpdata{cg}, $tpdata{tp}, $tpdata{test}, $TOW, $TOW_CG );
-    }
+    # unless ($opt_o) {
+    #     $die_now += Verfiy_Wt_CG ( $tpdata{wt}, $tpdata{cg}, $tpdata{tp}, $tpdata{test}, $TOW, $TOW_CG );
+    # }
 
     # put test name in template
     $tpstart = $tpstart_template;
@@ -831,6 +833,17 @@ sub Verfiy_Wt_CG {
     # useage Verify_Wt_CG (test_pt_wt, test_pt_CG, test_pt_number, aircraft_wt,
     # aircraft_CG)
 
+    ($fwd_cg_limit, $aft_cg_limit) = CG_limits($dbh, $aircraft, $TOW);
+    my $range = $aft_cg_limit - $fwd_cg_limit;
+    my $fwd_min = $fwd_cg_limit + $range * $data{fwd_min} / 100;
+    my $fwd_max = $fwd_cg_limit + $range * $data{fwd_max} / 100;
+    my $aft_min = $aft_cg_limit + $range * $data{aft_min} / 100;
+    my $aft_max = $aft_cg_limit + $range * $data{aft_max} / 100;
+    my $mid_min = ($fwd_cg_limit + $aft_cg_limit) / 2 - $range * $data{mid} / 100;
+    my $mid_max = ($fwd_cg_limit + $aft_cg_limit) / 2 + $range * $data{mid} / 100;
+    
+    # print "$fwd_cg_limit, $aft_cg_limit\n";
+
     my $error = "0";
     if ($_[0] eq "hvy" & $TOW < $hvy_min) {
         print "tp $_[2] $_[3] calls for heavy weight but aircraft weight is less than $hvy_min lb.\n";
@@ -857,22 +870,22 @@ sub Verfiy_Wt_CG {
         $error ++;
     }
 
-    if ($_[1] eq "fwd" & $TOW_CG > $fwd_cg_max) {
+    if ($_[1] eq "fwd" & $TOW_CG > $fwd_max) {
         print "tp $_[2] $_[3] calls for forward CG but aircraft CG is too far aft.\n";
         $error ++;
     }
 
-    if ($_[1] eq "mid" & $TOW_CG < $mid_cg_min) {
+    if ($_[1] eq "mid" & $TOW_CG < $mid_min) {
         print "tp $_[2] $_[3] calls for mid CG but aircraft CG is too far forward.\n";
         $error ++;
     }
 
-    if ($_[1] eq "mid" & $TOW_CG > $mid_cg_max) {
+    if ($_[1] eq "mid" & $TOW_CG > $mid_max) {
         print "tp $_[2] $_[3] calls for mid CG but aircraft CG is too far aft.\n";
         $error ++;
     }
 
-    if ($_[1] eq "aft" & $TOW_CG < $aft_cg_min) {
+    if ($_[1] eq "aft" & $TOW_CG < $aft_min) {
         print "tp $_[2] $_[3] calls for aft CG but aircraft CG is too far forward.\n";
         $error ++;
     }
@@ -886,7 +899,7 @@ sub Verfiy_Wt_CG {
         print "tp $_[2] $_[3] calls for aerobatic aft CG but aircraft CG is too far aft.\n";
         $error ++;
     }
-
+    print "Debug in verify wt/cg\n";
     return "$error";
 }
 
@@ -947,7 +960,7 @@ sub CG_limits {
     # for a given database handle, aircaft and weight, return forward and aft CG limits
     # also check whether specified weight is inside approved limits
     
-    # usage sub($database_handle, $registration, $weight)    
+    # usage CG_limits($database_handle, $registration, $weight)    
     # returns ($fwd_limit, $aft_limit)
     
     my $database_handle = $_[0];
@@ -1008,4 +1021,4 @@ sub pull_CG_lim {
         $n = $n + 1;
         }
     return $cg_lim;
-    }
+}
