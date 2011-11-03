@@ -257,7 +257,7 @@ else {
 
 @working_data = readline INPUT;
 
-$OUTPUT_FILE = "$test_card_home/Test_card_flt_$flt_no";
+$OUTPUT_FILE = "$test_card_home/Test_card_" . $aircraft . "_flt_$flt_no";
 
 open( OUTPUT, '>', "$OUTPUT_FILE.tex" )
   or die "Can't open test card file: $!";
@@ -427,8 +427,6 @@ else {
 }
 
 @working_data = readline INPUT;
-
-$OUTPUT_FILE = "$test_card_home/Test_card_flt_$flt_no";
 
 open( OUTPUT, '>', "$OUTPUT_FILE.tex" )
   or die "Can't open test card file: $!";

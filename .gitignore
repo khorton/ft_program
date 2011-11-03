@@ -1,7 +1,8 @@
-Test_card_flt*.*
+Test_card*flt*.*
 *.aux
 *.pdf
 *.eps
+*.log
 wb_chart.tex
 wb_chart_test_card.gp
 ft_card_wb.txt
