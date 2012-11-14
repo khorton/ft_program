@@ -2,6 +2,7 @@ Test_card*flt*.*
 *.aux
 *.pdf
 *.eps
+*.dvi
 *.log
 wb_chart.tex
 wb_chart_test_card.gp
