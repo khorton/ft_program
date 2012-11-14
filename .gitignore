@@ -3,5 +3,11 @@ Test_card_flt*.*
 *.aux
 *.pdf
 *.eps
+*.dvi
+*.ps
+*.log
 wb_chart*.
 wb_chart_test_card.gp
+wb/wb_chart.tex
+wb/ft_card_wb.txt
+Test_card_*.tex
