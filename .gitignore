@@ -3,8 +3,10 @@ Test_card*flt*.*
 *.pdf
 *.eps
 *.dvi
+*.ps
 *.log
-wb_chart.tex
+wb_chart*.
 wb_chart_test_card.gp
-ft_card_wb.txt
-config_test.pl
+wb/wb_chart.tex
+wb/ft_card_wb.txt
+Test_card_*.tex
