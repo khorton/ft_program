@@ -25,8 +25,7 @@
 # v1.0      2011-09-17 Initial public release
 # v1.0.1    2011-09-19 Move database info to variables vice hardcoded
 # v1.1      2011-09-20 Allow multiple aircraft in same database
-# v1.2a     2011-09-29 Move CG data to aircraft database
-#                      Accomodate non-rectangular weight/CG envelopes
+# v1.2      2012-11-13 Correct multiple errors, to make it run again
 #
 #=============================================================================#
 #
