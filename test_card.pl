@@ -69,8 +69,6 @@
 #
 #         8. Support non-rectangular weight/CG envelopes.
 #
-#         9. Sort out checks of take-off wt & CG around line 490.
-
 #=============================================================================
 # Done:   5. 20090227 - reworked to add new table that holds list of test
 #            points and sequence to be flown on each flight, to facilitate
@@ -80,6 +78,9 @@
 #            test point data base.  New aircraft table contains details of
 #            all aircraft.  aircraft field in all other tables, except the
 #            test_program table, ties each record to a specific aircraft.
+#
+#         9. 20121124 - Sort out checks of take-off wt & CG around line 490.
+
 
 use strict;
 use DBI;
