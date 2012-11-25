@@ -58,16 +58,15 @@
 #
 # in the above case, the output will be named article.pdf
 #
-#         5. Add new table that holds list of test points and sequence to be
-#            flown on each flight, to facilitate flying each test point
-#            multiple times.
-#
-#         6. Allow test programs for multiple aircraft in one mysql file.
-#
 #         7. Move weight and CG limits to aircraft table, to allow different
 #            aircraft to have different values.
 #
 #         8. Support non-rectangular weight/CG envelopes.
+#
+#        10. Support multiple fuel tanks, including fuel burn line
+#            calculation that considers normal fuel tank sequence.
+#
+#        11. Support fuel tanks with arm that varies with fuel quantity.
 #
 #=============================================================================
 # Done:   5. 20090227 - reworked to add new table that holds list of test
