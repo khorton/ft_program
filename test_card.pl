@@ -68,6 +68,8 @@
 #            aircraft to have different values.
 #
 #         8. Support non-rectangular weight/CG envelopes.
+#
+#         9. Sort out checks of take-off wt & CG around line 490.
 
 #=============================================================================
 # Done:   5. 20090227 - reworked to add new table that holds list of test
@@ -145,8 +147,8 @@ my $ZFW_CG = "";
 my $TOW = "";
 my $TOW_CG = "";
 my $TOW_max = "";
-my $fwd_cg_limit = "78.7";
-my $aft_cg_limit = "86.82";
+my $fwd_cg_limit = "";
+my $aft_cg_limit = "";
 my $aerobatic_aft_cg_limit = "85.3";
 my $max_min                = "1782";    # min end of maximum weight band
 my $hvy_min                = "1750";    # min end of heavy weight band
@@ -302,9 +304,9 @@ else {
     }
 
     # $TOW_max = data{TOW_max};
-    my $fwd_cg_limit           = "78.7";
-    my $aft_cg_limit           = "86.82";
-    my $aerobatic_aft_cg_limit = "85.3";
+    # my $fwd_cg_limit           = "78.7";
+    # my $aft_cg_limit           = "86.82";
+    # my $aerobatic_aft_cg_limit = "85.3";
     my $max_min                = "1782";    # min end of maximum weight band
     my $hvy_min                = "1750";    # min end of heavy weight band
     my $med_max                = "1650";    # max end of med weight band
@@ -545,38 +547,6 @@ if ( $flt_no >= 1 ) {
     $data{to_moment} = CommaFormatted( sprintf( "%.2f", $TOW * $TOW_CG ) );
     $data{wb_chart} = $gnuplot_directory . "wb_chart";
 
-    # unless ($opt_o == "1") {
-    unless ($opt_o) {
-
-        #  print "Take off weight is $TOW.  MTOW is $TOW_max.\n";
-        if ( $TOW > $TOW_max ) {
-            $die_now++;
-            print qq(***The aircraft weight exceeds the MTOW.***\n);
-        }
-
-        if ( $TOW_CG < $fwd_cg_limit ) {
-            $die_now++;
-            print
-              qq(***The take-off CG is forward of the forward CG limit.***\n);
-        }
-
-        if ( $TOW_CG > $aft_cg_limit ) {
-            $die_now++;
-            print qq(***The take-off CG is aft of the aft CG limit.***\n);
-        }
-
-        if ( $ZFW_CG < $fwd_cg_limit ) {
-            $die_now++;
-            print
-              qq(***The zero-fuel CG is forward of the forward CG limit.***\n);
-        }
-
-        if ( $ZFW_CG > $aft_cg_limit ) {
-            $die_now++;
-            print qq(***The zero-fuel CG is aft of the aft CG limit.***\n);
-        }
-    }
-
     # write gnuplot file with fuel burn line and labels
     $gnuplot_file          = read_file($gnuplot_wb_file_template);
     $gnuplot_start_label_x = $TOW_CG + 0.1;
@@ -612,6 +582,45 @@ else {
     $data{date} = FormatDate( $data{date} );
 }
 ###############################################################################
+
+# Verify take-off weight and CG are in the approved envelope
+# print "***TOW = $TOW\n";
+($fwd_cg_limit, $aft_cg_limit) = CG_limits($dbh, $aircraft, $TOW);
+
+# print "CG Limits = $fwd_cg_limit, $aft_cg_limit\n";
+
+unless ($opt_o) {
+
+    #  print "Take off weight is $TOW.  MTOW is $TOW_max.\n";
+    if ( $TOW > $TOW_max ) {
+        $die_now++;
+        print qq(***The aircraft weight exceeds the MTOW.***\n);
+    }
+
+    if ( $TOW_CG < $fwd_cg_limit ) {
+        $die_now++;
+        print
+          qq(***The take-off CG is forward of the forward CG limit.***\n);
+    }
+
+    if ( $TOW_CG > $aft_cg_limit ) {
+        $die_now++;
+        print "***Take-off CG = $TOW_CG and aft limit = $aft_cg_limit\n";
+        print qq(***The take-off CG is aft of the aft CG limit.***\n);
+    }
+
+    if ( $ZFW_CG < $fwd_cg_limit ) {
+        $die_now++;
+        print
+          qq(***The zero-fuel CG is forward of the forward CG limit.***\n);
+    }
+
+    if ( $ZFW_CG > $aft_cg_limit ) {
+        $die_now++;
+        print qq(***The zero-fuel CG is aft of the aft CG limit.***\n);
+    }
+}
+
 
 # Replace data in test card start file with data from the database.
 ### DEBUG ###
@@ -653,7 +662,10 @@ if ( $sth->rows < 1 ) {
     exit;
 }
 
-while ( my $ref = $sth->fetchrow_hashref() ) {
+my $sth2 = $dbh->prepare("$query");
+$sth2->execute();
+
+while ( my $ref = $sth2->fetchrow_hashref() ) {
 
     %tpdata = (
         test     => uc( $ref->{'test'} ),
@@ -667,7 +679,7 @@ while ( my $ref = $sth->fetchrow_hashref() ) {
         remarks  => $ref->{'remarks'},
         risk     => $ref->{'risk'},
     );
-
+    print "Test = $tpdata{test}\n";
     # check test point weight and cg requirements against aircraft loading
     unless ($opt_o) {
         $die_now += Verfiy_Wt_CG ( $tpdata{wt}, $tpdata{cg}, $tpdata{tp}, $tpdata{test}, $TOW, $TOW_CG );
@@ -947,6 +959,18 @@ sub Verfiy_Wt_CG {
 
     # print "$fwd_cg_limit, $aft_cg_limit\n";
 
+    ($fwd_cg_limit, $aft_cg_limit) = CG_limits($dbh, $aircraft, $TOW);
+    print "in Verify_Wt_CG: CG limits = $fwd_cg_limit, $aft_cg_limit\n";
+    my $range = $aft_cg_limit - $fwd_cg_limit;
+    my $fwd_min = $fwd_cg_limit + $range * $data{fwd_min} / 100;
+    my $fwd_max = $fwd_cg_limit + $range * $data{fwd_max} / 100;
+    my $aft_min = $aft_cg_limit + $range * $data{aft_min} / 100;
+    my $aft_max = $aft_cg_limit + $range * $data{aft_max} / 100;
+    my $mid_min = ($fwd_cg_limit + $aft_cg_limit) / 2 - $range * $data{mid} / 100;
+    my $mid_max = ($fwd_cg_limit + $aft_cg_limit) / 2 + $range * $data{mid} / 100;
+    
+    # print "$fwd_cg_limit, $aft_cg_limit\n";
+
     my $error = "0";
     if ( $_[0] eq "hvy" & $TOW < $hvy_min ) {
         print
@@ -978,22 +1002,22 @@ sub Verfiy_Wt_CG {
         $error++;
     }
 
-    if ($_[1] eq "fwd" & $TOW_CG > $fwd_cg_max) {
+    if ($_[1] eq "fwd" & $TOW_CG > $fwd_max) {
         print "tp $_[2] $_[3] calls for forward CG but aircraft CG is too far aft.\n";
         $error ++;
     }
 
-    if ($_[1] eq "mid" & $TOW_CG < $mid_cg_min) {
+    if ($_[1] eq "mid" & $TOW_CG < $mid_min) {
         print "tp $_[2] $_[3] calls for mid CG but aircraft CG is too far forward.\n";
         $error ++;
     }
 
-    if ($_[1] eq "mid" & $TOW_CG > $mid_cg_max) {
+    if ($_[1] eq "mid" & $TOW_CG > $mid_max) {
         print "tp $_[2] $_[3] calls for mid CG but aircraft CG is too far aft.\n";
         $error ++;
     }
 
-    if ($_[1] eq "aft" & $TOW_CG < $aft_cg_min) {
+    if ($_[1] eq "aft" & $TOW_CG < $aft_min) {
         print "tp $_[2] $_[3] calls for aft CG but aircraft CG is too far forward.\n";
         $error ++;
     }
@@ -1009,7 +1033,7 @@ sub Verfiy_Wt_CG {
 "tp $_[2] $_[3] calls for aerobatic aft CG but aircraft CG is too far aft.\n";
         $error++;
     }
-
+    print "Debug in verify wt/cg\n";
     return "$error";
 }
 
@@ -1075,9 +1099,10 @@ sub CG_limits {
     # for a given database handle, aircaft and weight, return forward and aft CG limits
     # also check whether specified weight is inside approved limits
     
-    # usage sub($database_handle, $registration, $weight)    
+    # usage CG_limits($database_handle, $registration, $weight)    
     # returns ($fwd_limit, $aft_limit)
-
+    
+    print "In CG_limits\n";
     my $database_handle = $_[0];
     my $registration    = $_[1];
     my $weight          = $_[2];
@@ -1143,4 +1168,4 @@ sub pull_CG_lim {
         $n = $n + 1;
     }
     return $cg_lim;
-    }
+}
