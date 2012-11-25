@@ -134,7 +134,9 @@ my $manual_date  = "";  # Manually entered date, to override date in database
 my $OUTPUT_FILE  = "";  # File name for LaTeX test card file to be created.
 my @working_data = "";
 my %data = "";                  # hash of info for each flight from the flights table
+my %data1 = "";                  # hash of info for each flight from the flights table
 my %data2 = "";                  # hash of info for each flight from the flights table
+my %data3 = "";                  # hash of info for each flight from the flights table
 my %tpdata = "";                # speed, altitude, power, flaps, etc for each test point
 my $template = "";              # path to relevant test point template file
 my $last_test = "";             # name of last test, to see if the next one is the same type
@@ -171,6 +173,7 @@ my $aircraft        = "";
 
 my %options      = ();
 my $sth          = "";
+my $sth2          = "";
 my @purpose      = "";
 my @temp_purpose = "";
 
@@ -281,7 +284,7 @@ elsif ( $sth->rows > 1 ) {
 }
 else {
     while ( my $ref = $sth->fetchrow_hashref() ) {
-        %data = (
+        %data1 = (
             TOW_max        => $ref->{'max_wt'},
             TOW_min        => $ref->{'min_wt'},
             fwd_wts        => $ref->{'fwd_wts'},
@@ -304,14 +307,14 @@ else {
     }
 
     # $TOW_max = data{TOW_max};
-    # my $fwd_cg_limit           = "78.7";
-    # my $aft_cg_limit           = "86.82";
-    # my $aerobatic_aft_cg_limit = "85.3";
-    my $max_min                = "1782";    # min end of maximum weight band
-    my $hvy_min                = "1750";    # min end of heavy weight band
-    my $med_max                = "1650";    # max end of med weight band
-    my $med_min                = "1500";    # min end of med weight band
-    my $lt_max                 = "1450";    # max end of light weight band
+    # my $fwd_cg_limit           = "";
+    # my $aft_cg_limit           = "";
+    # my $aerobatic_aft_cg_limit = "";
+    # my $max_min                = "1782";    # min end of maximum weight band
+    # my $hvy_min                = "1750";    # min end of heavy weight band
+    # my $med_max                = "1650";    # max end of med weight band
+    # my $med_min                = "1500";    # min end of med weight band
+    # my $lt_max                 = "1450";    # max end of light weight band
     my $fwd_cg_max =
       "79.27";    # aft end of fwd cg band (7% of CG range behind fwd limit)
     my $mid_cg_min =
@@ -365,11 +368,11 @@ while ( my $ref = $sth->fetchrow_hashref() ) {
     );
 }
 
-%data = ( %data, %data2 );
+%data = ( %data1, %data2 );
 
 $sth->finish();
-print "pilot arm = $data{pilot_seat_arm}\n";
-print "fuel arm = $data{fuel_arm}\n";
+# print "pilot arm = $data{pilot_seat_arm}\n";
+# print "fuel arm = $data{fuel_arm}\n";
 
 if ($manual_date) { $data{date} = $manual_date }
 
@@ -626,6 +629,7 @@ unless ($opt_o) {
 ### DEBUG ###
 my @keys   = keys %data;
 my @values = values %data;
+
 while (@keys) {
     print pop(@keys), '=', pop(@values), "\n";
 }
@@ -1111,7 +1115,7 @@ sub CG_limits {
         "SELECT * FROM aircraft WHERE registration = \'$registration\'");
     $sth->execute();
     while ( my $ref = $sth->fetchrow_hashref() ) {
-        %data = (
+        %data3 = (
             min_wt  => $ref->{'min_wt'},
             max_wt  => $ref->{'max_wt'},
             fwd_wts => $ref->{'fwd_wts'},
@@ -1122,22 +1126,22 @@ sub CG_limits {
     }
     $sth->finish();
 
-    if ( $weight < $data{min_wt} ) {
+    if ( $weight < $data3{min_wt} ) {
         print
 "Fatal error - specified weight is less than approved minimum flight weight\n";
         exit;
     }
 
-    if ( $weight > $data{max_wt} ) {
+    if ( $weight > $data3{max_wt} ) {
         print
 "Fatal error - specified weight is greater than approved maximum take-off weight\n";
         exit;
     }
 
-    my @fwd_wts = split( ',', $data{fwd_wts} );
-    my @fwd_cgs = split( ',', $data{fwd_cgs} );
-    my @aft_wts = split( ',', $data{aft_wts} );
-    my @aft_cgs = split( ',', $data{aft_cgs} );
+    my @fwd_wts = split( ',', $data3{fwd_wts} );
+    my @fwd_cgs = split( ',', $data3{fwd_cgs} );
+    my @aft_wts = split( ',', $data3{aft_wts} );
+    my @aft_cgs = split( ',', $data3{aft_cgs} );
 
     my $fwd_cg_lim = pull_CG_lim( $weight, \@fwd_wts, \@fwd_cgs );
     my $aft_cg_lim = pull_CG_lim( $weight, \@aft_wts, \@aft_cgs );
