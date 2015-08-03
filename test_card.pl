@@ -1126,13 +1126,13 @@ sub CG_limits {
     }
     $sth->finish();
 
-    if ( $weight < $data3{min_wt} ) {
+    if ( $flt_no >= 1 & $weight < $data3{min_wt} ) {
         print
 "Fatal error - specified weight is less than approved minimum flight weight\n";
         exit;
     }
 
-    if ( $weight > $data3{max_wt} ) {
+    if ( $flt_no >= 1 & $weight > $data3{max_wt} ) {
         print
 "Fatal error - specified weight is greater than approved maximum take-off weight\n";
         exit;
