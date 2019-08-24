@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 #
 # Script to pull aircraft flight test points from MySQL database, write a LaTeX
 # file which is then used to create a pdf flight test card.
