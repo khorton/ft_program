@@ -4,6 +4,8 @@ Test_card*flt*.*
 *.eps
 *.dvi
 *.log
+*.sql
+*.gz
 wb_chart.tex
 wb_chart_test_card.gp
 ft_card_wb.txt
