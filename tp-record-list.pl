@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/env perl
 #
 # Script to pull list of RV-8 flight test points from test_program table and
 # write the list to tp_flown table.  The intent is that the script would be run
