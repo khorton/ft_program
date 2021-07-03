@@ -10,3 +10,5 @@ wb_chart_test_card.gp
 wb/wb_chart.tex
 wb/ft_card_wb.txt
 Test_card_*.tex
+*.sql
+*.sql.gz
