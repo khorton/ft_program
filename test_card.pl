@@ -260,7 +260,7 @@ open( OUTPUT, '>', "$OUTPUT_FILE.tex" )
   or die "Can't open test card file: $!";
 
 # Connect to the database.
-my $dbh = DBI->connect( "DBI:mysql:database=$database;host=localhost",
+my $dbh = DBI->connect( "DBI:MariaDB:database=$database;host=localhost",
     "$database_user", "$database_password", { 'RaiseError' => 1 } );
 
 # check that the specified aircraft exists
